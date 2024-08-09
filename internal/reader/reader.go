@@ -1,28 +1,71 @@
 package reader
 
 import (
-	"finnegan/internal/board"
-	"fmt"
-	"os"
 	"bufio"
+	"finnegan/internal/board"
+	"os"
+	"strconv"
+)
+
+var (
+	DarkCell rune = '■'
 )
 
 func Read(gamePath string) (*board.Board, error) {
+	// Open File
 	file, err := os.Open(gamePath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	// optionally, resize scanner's capacity for lines over 64K, see next example
-	for scanner.Scan() {
-		fmt.Println(scanner.Text())
-	}
+	fileReader := bufio.NewReader(file)
+	newBoard := new(board.Board)
 
-	if err := scanner.Err(); err != nil {
+	// Get Grid size
+	gridSizeLine, err := fileReader.ReadString('\n')
+	if err != nil {
+		return nil, err
+	}
+	newBoard.Size, err = strconv.Atoi(gridSizeLine[:len(gridSizeLine)-1])
+	if err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	// Initilize Grid
+	newBoard.Grid = make([][]rune, newBoard.Size)
+	for i := range newBoard.Grid {
+		newBoard.Grid[i] = make([]rune, newBoard.Size)
+	}
+
+	// Gather grid from file
+	for row := range newBoard.Size {
+		gridLine, err := fileReader.ReadString('\n')
+		if err != nil {
+			return nil, err
+		}
+		gridLine = gridLine[:len(gridLine)-1]
+		runeLine := []rune(gridLine)
+		for i := range runeLine {
+			if runeLine[i] == '1' {
+				runeLine[i] = DarkCell
+			}
+		}
+		newBoard.Grid[row] = runeLine
+	}
+
+	// Gather numbers from file
+	for {
+        line, err := fileReader.ReadString('\n')
+        if err != nil {
+            if err.Error() != "EOF" {
+				return nil, err
+            }
+            break
+        }
+		line = line[:len(line)-1]
+        newBoard.NumberList = append(newBoard.NumberList, line)
+    }
+
+	return newBoard, nil
 }
