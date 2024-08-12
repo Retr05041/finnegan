@@ -2,6 +2,8 @@ package board
 
 import (
 	"fmt"
+	"bufio"
+	"os"
 )
 
 // CURRENT PROBLEM - Candidates of the wrong size are being placed (smaller than whats needed) + if they backtrack they need to add the candidate back into the list... + I also believe it can't handle middle grid setting
@@ -34,9 +36,11 @@ func (b Board) Solve() bool {
 	}
 
 	possibleCandidateLengths := getPossibleCandidateLengths(b.Grid, *emptyCellRow, *emptyCellCol)
+	fmt.Printf("Possible candidates given the starting cell: %d,%d -- ", *emptyCellRow, *emptyCellCol)
 
 	for _,length := range possibleCandidateLengths {
 		possibleCandidates := b.CandidateMap[length]
+		fmt.Println(possibleCandidates)
 		for canIndex,candidate := range possibleCandidates {
 			for _,direction := range directions {
 				if validPlacement(b.Grid, candidate, *emptyCellRow, *emptyCellCol, direction) {
@@ -44,6 +48,7 @@ func (b Board) Solve() bool {
 					b.Grid = newGrid
 					b.CandidateMap[length] = removeCandidateFromList(possibleCandidates, canIndex)
 					b.Display()
+					bufio.NewReader(os.Stdin).ReadBytes('\n') 
 					if b.Solve() {
 						return true
 					}
