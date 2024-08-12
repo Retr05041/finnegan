@@ -7,10 +7,6 @@ import (
 	"strconv"
 )
 
-var (
-	DarkCell rune = '■'
-)
-
 func Read(gamePath string) (*board.Board, error) {
 	// Open File
 	file, err := os.Open(gamePath)
@@ -21,6 +17,7 @@ func Read(gamePath string) (*board.Board, error) {
 
 	fileReader := bufio.NewReader(file)
 	newBoard := new(board.Board)
+	newBoard.DarkCell = '■'
 
 	// Get Grid size
 	gridSizeLine, err := fileReader.ReadString('\n')
@@ -48,7 +45,9 @@ func Read(gamePath string) (*board.Board, error) {
 		runeLine := []rune(gridLine)
 		for i := range runeLine {
 			if runeLine[i] == '1' {
-				runeLine[i] = DarkCell
+				runeLine[i] = newBoard.DarkCell
+			} else {
+				runeLine[i] = '.'
 			}
 		}
 		newBoard.Grid[row] = runeLine

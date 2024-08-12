@@ -12,12 +12,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(board.Grid)
-	for row := range board.Grid {
-		for _, num := range board.Grid[row] {
-			fmt.Print(string(num))
-		}
-		fmt.Println()
-	}
 	fmt.Println(board.NumberList)
+	if board.Solve() {
+		board.Display()
+	} else {
+		fmt.Println("Could not solve puzzle.")
+	}
 }
