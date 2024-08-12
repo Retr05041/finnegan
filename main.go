@@ -12,7 +12,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(board.NumberList)
+	fmt.Println(board.CandidateMap)
 	if board.Solve() {
 		board.Display()
 	} else {

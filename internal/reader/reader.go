@@ -18,6 +18,7 @@ func Read(gamePath string) (*board.Board, error) {
 	fileReader := bufio.NewReader(file)
 	newBoard := new(board.Board)
 	newBoard.DarkCell = '■'
+	newBoard.CandidateMap = make(map[int][]string)
 
 	// Get Grid size
 	gridSizeLine, err := fileReader.ReadString('\n')
@@ -63,7 +64,12 @@ func Read(gamePath string) (*board.Board, error) {
             break
         }
 		line = line[:len(line)-1]
-        newBoard.NumberList = append(newBoard.NumberList, line)
+
+		if existingCandidates, ok := newBoard.CandidateMap[len(line)]; ok {
+			newBoard.CandidateMap[len(line)] = append(existingCandidates, line)
+		} else {
+			newBoard.CandidateMap[len(line)] = []string{line}
+		}
     }
 
 	return newBoard, nil
