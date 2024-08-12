@@ -41,6 +41,8 @@ func (b Board) Solve() bool {
 	for _,length := range possibleCandidateLengths {
 		possibleCandidates := b.CandidateMap[length]
 		fmt.Println(possibleCandidates)
+		fmt.Print("Untested lengths: ")
+		fmt.Println(possibleCandidateLengths)
 		for canIndex,candidate := range possibleCandidates {
 			for _,direction := range directions {
 				if validPlacement(b.Grid, candidate, *emptyCellRow, *emptyCellCol, direction) {
