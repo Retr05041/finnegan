@@ -34,29 +34,34 @@ func (b Board) Solve() bool {
 	if emptyCellRow == nil || emptyCellCol == nil {
 		return true
 	}
+	fmt.Printf("WORKING CELL: %d,%d", *emptyCellRow, *emptyCellCol)
+	fmt.Println()
 
 	possibleCandidateLengths := getPossibleCandidateLengths(b.Grid, *emptyCellRow, *emptyCellCol)
-	fmt.Printf("Possible candidates given the starting cell: %d,%d -- ", *emptyCellRow, *emptyCellCol)
+	fmt.Print("Possible lengths: ")
+	fmt.Println(possibleCandidateLengths)
 
 	for _,length := range possibleCandidateLengths {
 		possibleCandidates := b.CandidateMap[length]
+		fmt.Print("Testing candidates - ")
 		fmt.Println(possibleCandidates)
-		fmt.Print("Untested lengths: ")
-		fmt.Println(possibleCandidateLengths)
 		for canIndex,candidate := range possibleCandidates {
+			fmt.Print("Testing candidate - ")
+			fmt.Println(candidate)
 			for _,direction := range directions {
 				if validPlacement(b.Grid, candidate, *emptyCellRow, *emptyCellCol, direction) {
 					newGrid, backupCells := place(b.Grid, candidate, *emptyCellRow, *emptyCellCol, direction)
 					b.Grid = newGrid
 					b.CandidateMap[length] = removeCandidateFromList(possibleCandidates, canIndex)
 					b.Display()
+					fmt.Println("Ready to move onto the next empty cell!")
 					bufio.NewReader(os.Stdin).ReadBytes('\n') 
 					if b.Solve() {
 						return true
 					}
-					b.Display()
 					b.Grid = remove(b.Grid, candidate, *emptyCellRow, *emptyCellCol, direction, backupCells)
 					b.CandidateMap[length] = addCandidateToList(possibleCandidates, candidate)
+					fmt.Println("BACKTRACKED")
 				}
 			}
 		}
@@ -77,29 +82,34 @@ func addCandidateToList(list []string, candidate string) []string {
 // Checks for possible lengths given an empty cell
 func getPossibleCandidateLengths(grid [][]rune, row int, col int) []int {
 	var possibleLengths []int
+	var length int
 
 	for _, direction := range directions {
 		if direction == 'h' {
-			if col > 0 && grid[row][col-1] != '.' {
-				continue
-			}
-			length := 0
+			//if col > 0 && grid[row][col-1] != '.' {
+			//	continue
+			//}
+			length = 0
 			for col + length < len(grid) && grid[row][col + length] == '.' {
 				length += 1
 			}
 			if length > 0 {
+				fmt.Printf("This cells allows for a horizontal size of %d", length)
+				fmt.Println()
 				possibleLengths = append(possibleLengths, length)
 			}
 		}
 		if direction == 'v' {
-			if row > 0 && grid[row-1][col] != '.' {
-				continue
-			}
-			length := 0
+			//if row > 0 && grid[row-1][col] != '.' {
+			//	continue
+			//}
+			length = 0
 			for row + length < len(grid) && grid[row+length][col] == '.' {
 				length += 1
 			}
 			if length > 0 {
+				fmt.Printf("This cells allows for a vertical size of %d", length)
+				fmt.Println()
 				possibleLengths = append(possibleLengths, length)
 			}
 		}
@@ -111,33 +121,41 @@ func getPossibleCandidateLengths(grid [][]rune, row int, col int) []int {
 // Checks if a candidate can be placed at that location without breaking rules of the game
 func validPlacement(grid [][]rune, candidate string, row int, col int, direction rune) bool {
 	if direction == 'h' {
+		// if the word goes off the board
 		if col + len(candidate) > len(grid)-1 {
 			return false
 		}
+		// 
 		for i := range len(candidate) {
-			cell := grid[row][col+i]
+			nextCell := grid[row][col+i]
 			// Already placed word / invalid placement check
-			if cell != '.' && cell != rune(candidate[i]) {
+			if nextCell != '.' && nextCell != rune(candidate[i]) {
 				return false
 			}
-			if cell == rune(candidate[i]) && ! canOverlapVertically(grid, candidate, row, col+i) {
+			if nextCell == rune(candidate[i]) && ! canOverlapVertically(grid, candidate, row, col+i) {
 				return false
 			}
+		}
+		if grid[row][col+len(candidate)] == '.' {
+			return false 
 		}
 	}
 
 	if direction == 'v' {
-		if col + len(candidate) > len(grid)-1 {
+		if row + len(candidate) > len(grid)-1 {
 			return false
 		}
 		for i := range len(candidate) {
-			cell := grid[row+i][col]
-			if cell != '.' && cell != rune(candidate[i]) {
+			nextCell := grid[row+i][col]
+			if nextCell != '.' && nextCell != rune(candidate[i]) {
 				return false
 			}
-			if cell == rune(candidate[i]) && ! canOverlapHorizontally(grid, candidate, row+i, col) {
+			if nextCell == rune(candidate[i]) && ! canOverlapHorizontally(grid, candidate, row+i, col) {
 				return false
 			}
+		}
+		if grid[row+len(candidate)][col] == '.' {
+			return false 
 		}
 	}
 	return true
