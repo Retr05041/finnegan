@@ -146,10 +146,10 @@ func (b Board) getPossibleCandidateLengths(row int, col int) []int {
 			}
 		}
 		if direction == 'v' {
-			//if row > 0 && b.Grid[row-1][col] != '.' || b.Grid[row-1][col] != b.DarkCell {
-			//	continue
-			//}
 			length = 0
+			for row-length < len(b.Grid) && b.Grid[row-length][col] != b.DarkCell && b.Grid[row-length][col] != '.' {
+				length += 1
+			}
 			for row+length < len(b.Grid) && b.Grid[row+length][col] == '.' {
 				length += 1
 			}

@@ -2,6 +2,5 @@
 Finnegan is a Fill-Ins puzzle solver
 
 ### Ideas..
-So far the horizontal placing words.. since it's doing it first instead of vertical.. 
-I could have it so it checks every cell around the current for non '.', or black cells, if there is it skips, else it tries either vertical or horizontal placements
-ontop of that current one, allowing for an almost staircase look - if it can't place anything down it backtracks :)
+Best possible solution: Place a word horizontally on the first empty cell, then check every cell the word is on vertically for matches (accounting for placement of the cell... i.e. if it's the 3rd rune in a vertical candidate)
+once all verticals have been checked for that horizontal, move to the next empty cell
