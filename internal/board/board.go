@@ -96,20 +96,24 @@ func validPlacement(grid [][]rune, candidate string, row int, col int, direction
 	}
 
 	if direction == 'v' {
-		if row+len(candidate) > len(grid)-1 {
+		if col < 0 || row < 0 || col >= len(grid) || row+len(candidate)-1 > len(grid)-1 {
+            fmt.Printf("The candidate goes off the board - start col: %d, candidate length: %d, row length: %d\n", col, len(candidate), len(grid[row]))
+            return false
+        }
+		if row+len(candidate) < len(grid)-1 && grid[row+len(candidate)][col] == '.' {
+			fmt.Println("It's too small to fit")
 			return false
 		}
 		for i := range len(candidate) {
 			nextCell := grid[row+i][col]
 			if nextCell != '.' && nextCell != rune(candidate[i]) {
+				fmt.Println("Next cell is not a '.' or the same as the current cell?")
 				return false
 			}
 			if nextCell == rune(candidate[i]) && !canOverlapHorizontally(grid, candidate, row+i, col) {
+				fmt.Println("Next cell is identical to what we want to place and it can't overlap the vertical word")
 				return false
 			}
-		}
-		if grid[row+len(candidate)][col] == '.' {
-			return false
 		}
 	}
 	return true
@@ -128,35 +132,38 @@ func addCandidateToList(list []string, candidate string) []string {
 // Checks for possible lengths given an empty cell
 func (b Board) getPossibleCandidateLengths(row int, col int) []int {
 	var possibleLengths []int
-	var length int
+	var upLength int
+	var downLength int
 
 	for _, direction := range directions {
 		if direction == 'h' {
 			if col > 0 && b.Grid[row][col-1] != '.' && b.Grid[row][col-1] != b.DarkCell {
 				continue
 			}
-			length = 0
-			for col+length < len(b.Grid) && b.Grid[row][col+length] == '.' {
-				length += 1
+			upLength = 0
+			downLength = 0
+			for col+downLength < len(b.Grid) && b.Grid[row][col+downLength] == '.' {
+				downLength += 1
 			}
-			if length > 0 {
-				fmt.Printf("This cells allows for a horizontal size of %d", length)
+			if downLength > 0 || upLength > 0 {
+				fmt.Printf("This cells allows for a horizontal size of %d", downLength+upLength)
 				fmt.Println()
-				possibleLengths = append(possibleLengths, length)
+				possibleLengths = append(possibleLengths, downLength)
 			}
 		}
 		if direction == 'v' {
-			length = 0
-			for row-length < len(b.Grid) && b.Grid[row-length][col] != b.DarkCell && b.Grid[row-length][col] != '.' {
-				length += 1
+			upLength = 0
+			downLength = 0
+			for row-upLength < len(b.Grid) && b.Grid[row-upLength][col] != b.DarkCell && b.Grid[row-upLength][col] != '.' {
+				upLength += 1
 			}
-			for row+length < len(b.Grid) && b.Grid[row+length][col] == '.' {
-				length += 1
+			for row+downLength < len(b.Grid) && b.Grid[row+downLength][col] == '.' {
+				downLength += 1
 			}
-			if length > 0 {
-				fmt.Printf("This cells allows for a vertical size of %d", length)
+			if downLength > 0 || upLength > 0 {
+				fmt.Printf("This cells allows for a vertical size of %d", downLength+upLength)
 				fmt.Println()
-				possibleLengths = append(possibleLengths, length)
+				possibleLengths = append(possibleLengths, downLength+upLength)
 			}
 		}
 
