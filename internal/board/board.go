@@ -29,12 +29,17 @@ func (b Board) Display() {
 
 // Main runner function
 func (b Board) Solve() bool {
+	// STEPS:
+	// 1. Get next empty cell - if none then solved // Go to next valid cell (non darkcell or border) - if the cell is the final cell then you have solved it
+	// 2. Solve for horizontal (if it lands on a cell that's got a candidate in it skip it, otherwise it's not fully complete and an be filled) - if backtracked to here, use a different option
+	// 3. Solve each vertical cell connected to that candidate - if any are invalid backtrack to step 2
+	// 4. Repeat steps 1-4
+
 	emptyCellRow, emptyCellCol := nextEmptyCell(b.Grid)
 	if emptyCellRow == nil || emptyCellCol == nil {
 		return true
 	}
-	fmt.Printf("WORKING CELL: %d,%d", *emptyCellRow, *emptyCellCol)
-	fmt.Println()
+	fmt.Printf("WORKING CELL: %d,%d\n", *emptyCellRow, *emptyCellCol)
 
 	possibleCandidateLengths := b.getPossibleCandidateLengths(*emptyCellRow, *emptyCellCol)
 	fmt.Print("Possible lengths: ")
@@ -42,11 +47,7 @@ func (b Board) Solve() bool {
 
 	for _, length := range possibleCandidateLengths {
 		possibleCandidates := b.CandidateMap[length]
-		fmt.Print("Testing candidates - ")
-		fmt.Println(possibleCandidates)
 		for canIndex, candidate := range possibleCandidates {
-			fmt.Print("Testing candidate - ")
-			fmt.Println(candidate)
 			for _, direction := range directions {
 				if validPlacement(b.Grid, candidate, *emptyCellRow, *emptyCellCol, direction) {
 					newGrid, backupCells := place(b.Grid, candidate, *emptyCellRow, *emptyCellCol, direction)
