@@ -73,9 +73,9 @@ func (b Board) Solve() bool {
 func validPlacement(grid [][]rune, candidate string, row int, col int, direction rune) bool {
 	if direction == 'h' {
 		if col < 0 || row < 0 || row >= len(grid) || col+len(candidate)-1 > len(grid[row]) {
-            fmt.Printf("The candidate goes off the board - start col: %d, candidate length: %d, row length: %d\n", col, len(candidate), len(grid[row]))
-            return false
-        }
+			fmt.Printf("The candidate goes off the board - start col: %d, candidate length: %d, row length: %d\n", col, len(candidate), len(grid[row]))
+			return false
+		}
 		// If it's too small
 		if col+len(candidate) < len(grid[row]) && grid[row][col+len(candidate)] == '.' {
 			fmt.Println("It's too small to fit")
@@ -97,9 +97,9 @@ func validPlacement(grid [][]rune, candidate string, row int, col int, direction
 
 	if direction == 'v' {
 		if col < 0 || row < 0 || col >= len(grid) || row+len(candidate)-1 > len(grid)-1 {
-            fmt.Printf("The candidate goes off the board - start col: %d, candidate length: %d, row length: %d\n", col, len(candidate), len(grid[row]))
-            return false
-        }
+			fmt.Printf("The candidate goes off the board - start col: %d, candidate length: %d, row length: %d\n", col, len(candidate), len(grid[row]))
+			return false
+		}
 		if row+len(candidate) < len(grid)-1 && grid[row+len(candidate)][col] == '.' {
 			fmt.Println("It's too small to fit")
 			return false
@@ -132,44 +132,55 @@ func addCandidateToList(list []string, candidate string) []string {
 // Checks for possible lengths given an empty cell
 func (b Board) getPossibleCandidateLengths(row int, col int) []int {
 	var possibleLengths []int
-	var upLength int
-	var downLength int
+	var totalLength int
 
 	for _, direction := range directions {
+		totalLength = 1 // Account for current cell
 		if direction == 'h' {
-			if col > 0 && b.Grid[row][col-1] != '.' && b.Grid[row][col-1] != b.DarkCell {
-				continue
+			leftCell := 1
+			rightCell := 1
+			leftLength := 0
+			rightLength := 0
+			// Left
+			for col-leftCell>= 0 && b.Grid[row][col-leftCell] != b.DarkCell {
+				leftCell += 1
+				leftLength += 1
 			}
-			upLength = 0
-			downLength = 0
-			for col+downLength < len(b.Grid) && b.Grid[row][col+downLength] == '.' {
-				downLength += 1
+			// Right
+			for col+rightCell < len(b.Grid) && b.Grid[row][col+rightCell] == '.' {
+				rightCell += 1
+				rightLength += 1
 			}
-			if downLength > 0 || upLength > 0 {
-				fmt.Printf("This cells allows for a horizontal size of %d", downLength+upLength)
-				fmt.Println()
-				possibleLengths = append(possibleLengths, downLength)
-			}
+			totalLength += leftLength + rightLength
+			fmt.Printf("This cells allows for a horizontal size of %d - leftLength: %d - rightLength: %d", totalLength, leftLength, rightLength)
+			fmt.Println()
+			possibleLengths = append(possibleLengths, totalLength)
 		}
 		if direction == 'v' {
-			upLength = 0
-			downLength = 0
-			for row-upLength < len(b.Grid) && b.Grid[row-upLength][col] != b.DarkCell && b.Grid[row-upLength][col] != '.' {
+			upCell := 1
+			downCell := 1
+			upLength := 0
+			downLength := 0
+			// Up
+			for row-upCell >= 0 && b.Grid[row-upCell][col] != b.DarkCell {
+				upCell += 1
 				upLength += 1
 			}
-			for row+downLength < len(b.Grid) && b.Grid[row+downLength][col] == '.' {
+			// Down
+			for row+downCell < len(b.Grid) && b.Grid[row+downCell][col] != b.DarkCell {
+				downCell += 1
 				downLength += 1
 			}
-			if downLength > 0 || upLength > 0 {
-				fmt.Printf("This cells allows for a vertical size of %d", downLength+upLength)
-				fmt.Println()
-				possibleLengths = append(possibleLengths, downLength+upLength)
-			}
+			totalLength += downLength + upLength
+			fmt.Printf("This cells allows for a vertical size of %d - upLength: %d - downLength: %d", totalLength, upLength, downLength)
+			fmt.Println()
+			possibleLengths = append(possibleLengths, totalLength)
 		}
 
 	}
 	return possibleLengths
 }
+
 // Checks if the candidate can be placed down on the cell block without breaking a pre-existing vertical word
 func canOverlapVertically(grid [][]rune, candidate string, row int, col int) bool {
 	for i := range len(candidate) {
