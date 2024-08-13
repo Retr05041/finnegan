@@ -19,6 +19,7 @@ var (
 	directions = [2]rune{'h', 'v'}
 )
 
+// Print the board nicely
 func (b Board) Display() {
 	for row := range b.Grid {
 		for _, num := range b.Grid[row] {
@@ -28,6 +29,7 @@ func (b Board) Display() {
 	}
 }
 
+// Main runner function
 func (b Board) Solve() bool {
 	emptyCellRow, emptyCellCol := nextEmptyCell(b.Grid)
 	if emptyCellRow == nil || emptyCellCol == nil {
@@ -67,54 +69,6 @@ func (b Board) Solve() bool {
 	}
 
 	return false
-}
-
-func removeCandidateFromList(list []string, candidateIndex int) []string {
-	list[candidateIndex] = list[len(list)-1]
-	return list[:len(list)-1]
-}
-
-func addCandidateToList(list []string, candidate string) []string {
-	return append(list, candidate)
-}
-
-// Checks for possible lengths given an empty cell
-func getPossibleCandidateLengths(grid [][]rune, row int, col int) []int {
-	var possibleLengths []int
-	var length int
-
-	for _, direction := range directions {
-		if direction == 'h' {
-			//if col > 0 && grid[row][col-1] != '.' {
-			//	continue
-			//}
-			length = 0
-			for col+length < len(grid) && grid[row][col+length] == '.' {
-				length += 1
-			}
-			if length > 0 {
-				fmt.Printf("This cells allows for a horizontal size of %d", length)
-				fmt.Println()
-				possibleLengths = append(possibleLengths, length)
-			}
-		}
-		if direction == 'v' {
-			//if row > 0 && grid[row-1][col] != '.' {
-			//	continue
-			//}
-			length = 0
-			for row+length < len(grid) && grid[row+length][col] == '.' {
-				length += 1
-			}
-			if length > 0 {
-				fmt.Printf("This cells allows for a vertical size of %d", length)
-				fmt.Println()
-				possibleLengths = append(possibleLengths, length)
-			}
-		}
-
-	}
-	return possibleLengths
 }
 
 // Checks if a candidate can be placed at that location without breaking rules of the game
@@ -163,6 +117,55 @@ func validPlacement(grid [][]rune, candidate string, row int, col int, direction
 	return true
 }
 
+// -- HELPER FUNCTIONS ---
+func removeCandidateFromList(list []string, candidateIndex int) []string {
+	list[candidateIndex] = list[len(list)-1]
+	return list[:len(list)-1]
+}
+
+func addCandidateToList(list []string, candidate string) []string {
+	return append(list, candidate)
+}
+
+// Checks for possible lengths given an empty cell
+func getPossibleCandidateLengths(grid [][]rune, row int, col int) []int {
+	var possibleLengths []int
+	var length int
+
+	for _, direction := range directions {
+		if direction == 'h' {
+			//if col > 0 && grid[row][col-1] != '.' {
+			//	continue
+			//}
+			length = 0
+			for col+length < len(grid) && grid[row][col+length] == '.' {
+				length += 1
+			}
+			if length > 0 {
+				fmt.Printf("This cells allows for a horizontal size of %d", length)
+				fmt.Println()
+				possibleLengths = append(possibleLengths, length)
+			}
+		}
+		if direction == 'v' {
+			//if row > 0 && grid[row-1][col] != '.' {
+			//	continue
+			//}
+			length = 0
+			for row+length < len(grid) && grid[row+length][col] == '.' {
+				length += 1
+			}
+			if length > 0 {
+				fmt.Printf("This cells allows for a vertical size of %d", length)
+				fmt.Println()
+				possibleLengths = append(possibleLengths, length)
+			}
+		}
+
+	}
+	return possibleLengths
+}
+// Checks if the candidate can be placed down on the cell block without breaking a pre-existing vertical word
 func canOverlapVertically(grid [][]rune, candidate string, row int, col int) bool {
 	for i := range len(candidate) {
 		if grid[row+i][col] != '.' && grid[row+i][col] != rune(candidate[i]) {
@@ -172,6 +175,7 @@ func canOverlapVertically(grid [][]rune, candidate string, row int, col int) boo
 	return true
 }
 
+// Checks if the candidate can be placed down on the cell block without breaking a pre-existing horizontal word
 func canOverlapHorizontally(grid [][]rune, candidate string, row int, col int) bool {
 	for i := range len(candidate) {
 		if grid[row][col+i] != '.' && grid[row][col+i] != rune(candidate[i]) {
@@ -181,7 +185,7 @@ func canOverlapHorizontally(grid [][]rune, candidate string, row int, col int) b
 	return true
 }
 
-// Place a word and return the updated Grid
+// Place a word horizontally or vertically at a specific row and col and return the updated Grid and a backup of what was in that cell block
 func place(grid [][]rune, candidate string, row int, col int, direction rune) ([][]rune, []rune) {
 	var backupCellSequence []rune
 	if direction == 'h' {
@@ -198,7 +202,7 @@ func place(grid [][]rune, candidate string, row int, col int, direction rune) ([
 	return grid, backupCellSequence
 }
 
-// Remove a word and return the updated Grid
+// Remove a word, restore from backup, and return the updated Grid
 func remove(grid [][]rune, candidate string, row int, col int, direction rune, backupCellSequence []rune) [][]rune {
 	if direction == 'h' {
 		for i := range len(candidate) {
@@ -212,6 +216,7 @@ func remove(grid [][]rune, candidate string, row int, col int, direction rune, b
 	return grid
 }
 
+// Checks for next empty cell in the grid
 func nextEmptyCell(grid [][]rune) (*int, *int) {
 	for row := range len(grid) {
 		for col := range len(grid[row]) {
