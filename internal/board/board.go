@@ -1,23 +1,22 @@
 package board
 
 import (
-	"fmt"
 	"bufio"
+	"fmt"
 	"os"
 )
 
 // CURRENT PROBLEM - Candidates of the wrong size are being placed (smaller than whats needed) + if they backtrack they need to add the candidate back into the list... + I also believe it can't handle middle grid setting
 
-
 type Board struct {
-	Size int
-	Grid [][]rune
+	Size         int
+	Grid         [][]rune
 	CandidateMap map[int][]string
-	DarkCell rune
+	DarkCell     rune
 }
 
 var (
-	directions = [2]rune{'h','v'}
+	directions = [2]rune{'h', 'v'}
 )
 
 func (b Board) Display() {
@@ -41,21 +40,21 @@ func (b Board) Solve() bool {
 	fmt.Print("Possible lengths: ")
 	fmt.Println(possibleCandidateLengths)
 
-	for _,length := range possibleCandidateLengths {
+	for _, length := range possibleCandidateLengths {
 		possibleCandidates := b.CandidateMap[length]
 		fmt.Print("Testing candidates - ")
 		fmt.Println(possibleCandidates)
-		for canIndex,candidate := range possibleCandidates {
+		for canIndex, candidate := range possibleCandidates {
 			fmt.Print("Testing candidate - ")
 			fmt.Println(candidate)
-			for _,direction := range directions {
+			for _, direction := range directions {
 				if validPlacement(b.Grid, candidate, *emptyCellRow, *emptyCellCol, direction) {
 					newGrid, backupCells := place(b.Grid, candidate, *emptyCellRow, *emptyCellCol, direction)
 					b.Grid = newGrid
 					b.CandidateMap[length] = removeCandidateFromList(possibleCandidates, canIndex)
 					b.Display()
 					fmt.Println("Ready to move onto the next empty cell!")
-					bufio.NewReader(os.Stdin).ReadBytes('\n') 
+					bufio.NewReader(os.Stdin).ReadBytes('\n')
 					if b.Solve() {
 						return true
 					}
@@ -90,7 +89,7 @@ func getPossibleCandidateLengths(grid [][]rune, row int, col int) []int {
 			//	continue
 			//}
 			length = 0
-			for col + length < len(grid) && grid[row][col + length] == '.' {
+			for col+length < len(grid) && grid[row][col+length] == '.' {
 				length += 1
 			}
 			if length > 0 {
@@ -104,7 +103,7 @@ func getPossibleCandidateLengths(grid [][]rune, row int, col int) []int {
 			//	continue
 			//}
 			length = 0
-			for row + length < len(grid) && grid[row+length][col] == '.' {
+			for row+length < len(grid) && grid[row+length][col] == '.' {
 				length += 1
 			}
 			if length > 0 {
@@ -121,28 +120,31 @@ func getPossibleCandidateLengths(grid [][]rune, row int, col int) []int {
 // Checks if a candidate can be placed at that location without breaking rules of the game
 func validPlacement(grid [][]rune, candidate string, row int, col int, direction rune) bool {
 	if direction == 'h' {
-		// if the word goes off the board
-		if col + len(candidate) > len(grid)-1 {
+		if col < 0 || row < 0 || row >= len(grid) || col+len(candidate)-1 > len(grid[row]) {
+            fmt.Printf("The candidate goes off the board - start col: %d, candidate length: %d, row length: %d\n", col, len(candidate), len(grid[row]))
+            return false
+        }
+		// If it's too small
+		if col+len(candidate) < len(grid[row]) && grid[row][col+len(candidate)] == '.' {
+			fmt.Println("It's too small to fit")
 			return false
 		}
-		// 
+		// if it place nicely amongst the black cells and other words
 		for i := range len(candidate) {
 			nextCell := grid[row][col+i]
-			// Already placed word / invalid placement check
 			if nextCell != '.' && nextCell != rune(candidate[i]) {
+				fmt.Println("Next cell is not a '.' or the same as the current cell?")
 				return false
 			}
-			if nextCell == rune(candidate[i]) && ! canOverlapVertically(grid, candidate, row, col+i) {
+			if nextCell == rune(candidate[i]) && !canOverlapVertically(grid, candidate, row, col+i) {
+				fmt.Println("Next cell is identical to what we want to place and it can't overlap the vertical word")
 				return false
 			}
-		}
-		if grid[row][col+len(candidate)] == '.' {
-			return false 
 		}
 	}
 
 	if direction == 'v' {
-		if row + len(candidate) > len(grid)-1 {
+		if row+len(candidate) > len(grid)-1 {
 			return false
 		}
 		for i := range len(candidate) {
@@ -150,12 +152,12 @@ func validPlacement(grid [][]rune, candidate string, row int, col int, direction
 			if nextCell != '.' && nextCell != rune(candidate[i]) {
 				return false
 			}
-			if nextCell == rune(candidate[i]) && ! canOverlapHorizontally(grid, candidate, row+i, col) {
+			if nextCell == rune(candidate[i]) && !canOverlapHorizontally(grid, candidate, row+i, col) {
 				return false
 			}
 		}
 		if grid[row+len(candidate)][col] == '.' {
-			return false 
+			return false
 		}
 	}
 	return true
@@ -180,7 +182,7 @@ func canOverlapHorizontally(grid [][]rune, candidate string, row int, col int) b
 }
 
 // Place a word and return the updated Grid
-func place(grid [][]rune, candidate string, row int, col int, direction rune) ([][]rune,[]rune){
+func place(grid [][]rune, candidate string, row int, col int, direction rune) ([][]rune, []rune) {
 	var backupCellSequence []rune
 	if direction == 'h' {
 		for i := range len(candidate) {
@@ -210,7 +212,7 @@ func remove(grid [][]rune, candidate string, row int, col int, direction rune, b
 	return grid
 }
 
-func nextEmptyCell(grid [][]rune) (*int,*int) {
+func nextEmptyCell(grid [][]rune) (*int, *int) {
 	for row := range len(grid) {
 		for col := range len(grid[row]) {
 			if grid[row][col] == '.' {
@@ -220,4 +222,3 @@ func nextEmptyCell(grid [][]rune) (*int,*int) {
 	}
 	return nil, nil
 }
-
