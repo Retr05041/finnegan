@@ -69,7 +69,7 @@ func (b Board) Solve() bool {
 	return false
 }
 
-// Checks if a candidate can be placed at that location without breaking rules of the game
+// Checks if a candidate can be placed at that location without breaking rules of the game - only works if the init row and col are empty
 func validPlacement(grid [][]rune, candidate string, row int, col int, direction rune) bool {
 	if direction == 'h' {
 		if col < 0 || row < 0 || row >= len(grid) || col+len(candidate)-1 > len(grid[row]) {
@@ -97,7 +97,7 @@ func validPlacement(grid [][]rune, candidate string, row int, col int, direction
 
 	if direction == 'v' {
 		if col < 0 || row < 0 || col >= len(grid) || row+len(candidate)-1 > len(grid)-1 {
-			fmt.Printf("The candidate goes off the board - start col: %d, candidate length: %d, row length: %d\n", col, len(candidate), len(grid[row]))
+			fmt.Printf("The candidate goes off the board - start row: %d, candidate length: %d, col length: %d\n", row, len(candidate), col)
 			return false
 		}
 		if row+len(candidate) < len(grid)-1 && grid[row+len(candidate)][col] == '.' {
