@@ -6,8 +6,6 @@ import (
 	"os"
 )
 
-// CURRENT PROBLEM - Candidates of the wrong size are being placed (smaller than whats needed) + if they backtrack they need to add the candidate back into the list... + I also believe it can't handle middle grid setting
-
 type Board struct {
 	Size         int
 	Grid         [][]rune
@@ -38,7 +36,7 @@ func (b Board) Solve() bool {
 	fmt.Printf("WORKING CELL: %d,%d", *emptyCellRow, *emptyCellCol)
 	fmt.Println()
 
-	possibleCandidateLengths := getPossibleCandidateLengths(b.Grid, *emptyCellRow, *emptyCellCol)
+	possibleCandidateLengths := b.getPossibleCandidateLengths(*emptyCellRow, *emptyCellCol)
 	fmt.Print("Possible lengths: ")
 	fmt.Println(possibleCandidateLengths)
 
@@ -128,17 +126,17 @@ func addCandidateToList(list []string, candidate string) []string {
 }
 
 // Checks for possible lengths given an empty cell
-func getPossibleCandidateLengths(grid [][]rune, row int, col int) []int {
+func (b Board) getPossibleCandidateLengths(row int, col int) []int {
 	var possibleLengths []int
 	var length int
 
 	for _, direction := range directions {
 		if direction == 'h' {
-			//if col > 0 && grid[row][col-1] != '.' {
-			//	continue
-			//}
+			if col > 0 && b.Grid[row][col-1] != '.' && b.Grid[row][col-1] != b.DarkCell {
+				continue
+			}
 			length = 0
-			for col+length < len(grid) && grid[row][col+length] == '.' {
+			for col+length < len(b.Grid) && b.Grid[row][col+length] == '.' {
 				length += 1
 			}
 			if length > 0 {
@@ -148,11 +146,11 @@ func getPossibleCandidateLengths(grid [][]rune, row int, col int) []int {
 			}
 		}
 		if direction == 'v' {
-			//if row > 0 && grid[row-1][col] != '.' {
+			//if row > 0 && b.Grid[row-1][col] != '.' || b.Grid[row-1][col] != b.DarkCell {
 			//	continue
 			//}
 			length = 0
-			for row+length < len(grid) && grid[row+length][col] == '.' {
+			for row+length < len(b.Grid) && b.Grid[row+length][col] == '.' {
 				length += 1
 			}
 			if length > 0 {
