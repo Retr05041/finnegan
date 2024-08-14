@@ -46,9 +46,13 @@ func (b Board) SolveGame1Test() bool {
 	}
 	// only candidate that could work horizontally at that 1,3 is 637047
 
+	fmt.Printf("WORKING HORZONTAL CELL: %d,%d\n", 1, 3)
+	fmt.Printf("This cells allows for a horizontal size of %d - leftLength: %d - rightLength: %d\n", *horizontalLengthOfWorkingCell, leftHorizontalLength, rightHorizontalLength)
+	b.Display()
 	possibleHorizontalCandidates := b.CandidateMap[*horizontalLengthOfWorkingCell]
 	for _, horizontalCandidate := range possibleHorizontalCandidates {
 		fmt.Println("Current horizontal candidate: "+horizontalCandidate)
+		fmt.Printf("leftLength: %d - rightLength: %d\n",leftHorizontalLength,rightHorizontalLength)
 		if isHorizontalValid, _:= validHorizontalPlacement(b.Grid, horizontalCandidate, 1, 3, leftHorizontalLength, rightHorizontalLength); isHorizontalValid {
 			_= b.place(horizontalCandidate, 1, 3, 'h', leftHorizontalLength)
 			b.Display()
@@ -147,14 +151,16 @@ func validHorizontalPlacement(grid [][]rune, candidate string, row int, col int,
 		fmt.Printf("The candidate goes off the board - start col: %d, candidate length: %d, row length: %d\n", col, len(candidate), len(grid[row]))
 		return false, nil
 	}
+	fmt.Println("Candidate fits on the board")
 	// If it's too small -- might be redundant
 	if col+rightLength+1 < len(grid[row]) && grid[row][col+rightLength+1] == '.' || col-leftLength-1 > 0 && grid[row][col-leftLength-1] == '.' {
 		fmt.Printf("It's too small to fit -- %d < %d && %t || %d > 0 && %t\n", col+rightLength, len(grid[row]), grid[row][col+rightLength+1] == '.', col-leftLength, grid[row][col-leftLength-1] == '.')
 		return false, nil
 	}
+	fmt.Println("Candidate fits into the space")
 	// if it place nicely amongst the black cells and other words going right
 	if rightLength > 0 {
-		for r := range rightLength {
+		for r := 1; r <= rightLength; r++ {
 			nextCell := grid[row][col+r]
 			if nextCell == '.' {
 				unFilledCells = append(unFilledCells, col+r)
@@ -165,9 +171,10 @@ func validHorizontalPlacement(grid [][]rune, candidate string, row int, col int,
 			}
 		}
 	}
+	fmt.Println("Right is valid!")
 	// Going left
 	if leftLength > 0 {
-		for l := range leftLength {
+		for l := 1; l <= leftLength; l++ {
 			nextCell := grid[row][col-l]
 			if nextCell == '.' {
 				unFilledCells = append(unFilledCells, col-l)
@@ -179,6 +186,7 @@ func validHorizontalPlacement(grid [][]rune, candidate string, row int, col int,
 			}
 		}
 	}
+	fmt.Println("Left is valid!")
 	return true, unFilledCells
 }
 
@@ -230,7 +238,6 @@ func (b Board) getHorizontalLength(row int, col int) (*int,int,int) {
 		rightLength += 1
 	}
 	totalLength += leftLength + rightLength
-	fmt.Printf("This cells allows for a horizontal size of %d - leftLength: %d - rightLength: %d\n", totalLength, leftLength, rightLength)
 	if leftLength == 0 && rightLength == 0 {
 		return nil, 0, 0
 	}
