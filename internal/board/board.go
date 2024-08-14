@@ -166,7 +166,7 @@ func validHorizontalPlacement(grid [][]rune, candidate string, row int, col int,
 				unFilledCells = append(unFilledCells, col+r)
 			}
 			if nextCell != '.' && nextCell != rune(candidate[r]) {
-				//fmt.Println("Next cell is not a '.' or the same as the current cell")
+				fmt.Printf("Cell %d,%d is not a '.' or the same as the current cell\n", row,col+r)
 				return false, nil
 			}
 		}
@@ -180,8 +180,8 @@ func validHorizontalPlacement(grid [][]rune, candidate string, row int, col int,
 				unFilledCells = append(unFilledCells, col-l)
 				continue
 			}
-			if nextCell != '.' && nextCell != rune(candidate[l]) {
-				//fmt.Println("Next cell is not a '.' or the same as the current cell")
+			if nextCell != '.' && nextCell != rune(candidate[l-1]) {
+				fmt.Printf("Cell %d,%d is not a '.' or the same as the current cell\n", row,col-l)
 				return false, nil
 			}
 		}
