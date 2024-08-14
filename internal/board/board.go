@@ -67,8 +67,7 @@ func (b Board) Solve() bool {
 		// If it's a Valid placement -- this will need to check back and forth, currently just checks forth
 		if isHorizontalValid, unFilledCells := validHorizontalPlacement(b.Grid, horizontalCandidate, *workingCellRow, *workingCellCol); isHorizontalValid {
 			usedHorizontalCandidates = append(usedHorizontalCandidates, horizontalCandidate)
-			newGrid, backupCells := place(b.Grid, horizontalCandidate, *workingCellRow, *workingCellCol, 'h')
-			b.Grid = newGrid
+			backupCells := b.place(horizontalCandidate, *workingCellRow, *workingCellCol, 'h', 0)
 			b.CandidateMap[*horizontalLengthOfWorkingCell] = removeCandidateFromList(possibleHorizontalCandidates, horizontalCanIndex)
 			b.Display()
 			fmt.Println("ready to move to the verticals!")
@@ -90,8 +89,7 @@ func (b Board) Solve() bool {
 					}
 					if validVerticalPlacement(b.Grid, verticalCandidate, *workingCellRow, cellColLocation) {
 						usedVerticalCandidates = append(usedVerticalCandidates, verticalCandidate)
-						newVerticalGrid, backupVerticalCells := place(b.Grid, verticalCandidate, *workingCellRow, cellColLocation, 'v')
-						b.Grid = newVerticalGrid
+						backupVerticalCells := b.place(verticalCandidate, *workingCellRow, cellColLocation, 'v', 0)
 						b.CandidateMap[*verticalLengthOfWorkingCell] = removeCandidateFromList(possibleVerticalCandidates, verticalCanIndex)
 						b.Display()
 						fmt.Println("Ready to move to the next empty cell!")
@@ -99,13 +97,13 @@ func (b Board) Solve() bool {
 						if b.Solve() {
 							return true
 						}
-						b.Grid = remove(b.Grid, verticalCandidate, *workingCellRow, cellColLocation, 'v', backupVerticalCells)
+						b.remove(verticalCandidate, *workingCellRow, cellColLocation, 'v', backupVerticalCells, 0)
 						b.CandidateMap[*verticalLengthOfWorkingCell] = addCandidateToList(possibleVerticalCandidates, verticalCandidate)
 						fmt.Println("BACKTRACKED VERTICAL")
 					}
 				}
 			}
-			b.Grid = remove(b.Grid, horizontalCandidate, *workingCellRow, *workingCellCol, 'h', backupCells)
+			b.remove(horizontalCandidate, *workingCellRow, *workingCellCol, 'h', backupCells, 0)
 			b.CandidateMap[*horizontalLengthOfWorkingCell] = addCandidateToList(possibleHorizontalCandidates, horizontalCandidate)
 			fmt.Println("BACKTRACKED HORIZONTAL")
 		}
@@ -136,10 +134,6 @@ func validHorizontalPlacement(grid [][]rune, candidate string, row int, col int)
 			//fmt.Println("Next cell is not a '.' or the same as the current cell")
 			return false, nil
 		}
-		//if nextCell == rune(candidate[i]) && !canOverlapVertically(grid, candidate, row, col+i) {
-		//	fmt.Println("Next cell is identical to what we want to place and it can't overlap the vertical word")
-		//	return false
-		//}
 	}
 	return true, unFilledCells
 }
@@ -160,10 +154,6 @@ func validVerticalPlacement(grid [][]rune, candidate string, row int, col int) b
 			//fmt.Println("Next cell is not a '.' or the same as the current cell")
 			return false
 		}
-		//if nextCell == rune(candidate[i]) && !canOverlapHorizontally(grid, candidate, row+i, col) {
-		//	fmt.Println("Next cell is identical to what we want to place and it can't overlap the vertical word")
-		//	return false
-		//}
 	}
 	return true
 }
@@ -176,11 +166,6 @@ func removeCandidateFromList(list []string, candidateIndex int) []string {
 
 func addCandidateToList(list []string, candidate string) []string {
 	return append(list, candidate)
-}
-
-func removeUnfilledCell(list []int, cellIndex int) []int {
-	list[cellIndex] = list[len(list)-1]
-	return list[:len(list)-1]
 }
 
 // Get Horizontal length of cell we are on
@@ -233,55 +218,34 @@ func (b Board) getPossibleVerticalLength(row int, col int) *int {
 	return &totalLength
 }
 
-// Checks if the candidate can be placed down on the cell block without breaking a pre-existing vertical word
-func canOverlapVertically(grid [][]rune, candidate string, row int, col int) bool {
-	for i := range len(candidate) {
-		if grid[row+i][col] != '.' && grid[row+i][col] != rune(candidate[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-// Checks if the candidate can be placed down on the cell block without breaking a pre-existing horizontal word
-func canOverlapHorizontally(grid [][]rune, candidate string, row int, col int) bool {
-	for i := range len(candidate) {
-		if grid[row][col+i] != '.' && grid[row][col+i] != rune(candidate[i]) {
-			return false
-		}
-	}
-	return true
-}
-
 // Place a word horizontally or vertically at a specific row and col and return the updated Grid and a backup of what was in that cell block
-func place(grid [][]rune, candidate string, row int, col int, direction rune) ([][]rune, []rune) {
+func (b Board) place(candidate string, row int, col int, direction rune, startIndexOfCandidate int) []rune {
 	var backupCellSequence []rune
 	if direction == 'h' {
 		for i := range len(candidate) {
-			backupCellSequence = append(backupCellSequence, grid[row][col+i])
-			grid[row][col+i] = rune(candidate[i])
+			backupCellSequence = append(backupCellSequence, b.Grid[row][col+i])
+			b.Grid[row][col+i] = rune(candidate[i])
 		}
 	} else if direction == 'v' {
 		for i := range len(candidate) {
-			backupCellSequence = append(backupCellSequence, grid[row+i][col])
-			grid[row+i][col] = rune(candidate[i])
+			backupCellSequence = append(backupCellSequence, b.Grid[row+i][col])
+			b.Grid[row+i][col] = rune(candidate[i])
 		}
 	}
-	return grid, backupCellSequence
+	return backupCellSequence
 }
 
 // Remove a word, restore from backup, and return the updated Grid
-func remove(grid [][]rune, candidate string, row int, col int, direction rune, backupCellSequence []rune) [][]rune {
+func (b Board) remove(candidate string, row int, col int, direction rune, backupCellSequence []rune, startIndexOfCandidate int) {
 	if direction == 'h' {
 		for i := range len(candidate) {
-			grid[row][col+i] = backupCellSequence[i]
+			b.Grid[row][col+i] = backupCellSequence[i]
 		}
 	} else if direction == 'v' {
 		for i := range len(candidate) {
-			grid[row+i][col] = backupCellSequence[i]
+			b.Grid[row+i][col] = backupCellSequence[i]
 		}
 	}
-	return grid
 }
 
 // Checks for next empty cell in the grid
