@@ -35,14 +35,16 @@ func (b Board) Display() {
 
 func (b Board) SolveGame1Test() bool {
 	// 70983
-	_ = b.place("70983", 0, 2, 'h', 0)
-	_ = b.place("701", 0, 2, 'v', 0)
+	_ = b.place("06188", 0, 2, 'h', 0)
+	// 701
+	_ = b.place("065", 0, 2, 'v', 0)
 
 
 	horizontalLengthOfWorkingCell, leftHorizontalLength, rightHorizontalLength := b.getHorizontalLength(1,3)
 	if horizontalLengthOfWorkingCell == nil {
 		return true
 	}
+	// only candidate that could work horizontally at that 1,3 is 637047
 
 	possibleHorizontalCandidates := b.CandidateMap[*horizontalLengthOfWorkingCell]
 	for _, horizontalCandidate := range possibleHorizontalCandidates {
