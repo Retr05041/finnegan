@@ -30,37 +30,40 @@ func (b Board) Display() {
 // Main runner function
 func (b Board) Solve() bool {
 	// STEPS:
-	// 1. Go to next valid cell (non darkcell or border) - if the cell is the final cell then you have solved it
+	// 1. Get next empty cell - if none then solved // Go to next valid cell (non darkcell or border) - if the cell is the final cell then you have solved it
 	// 2. Solve for horizontal (if it lands on a cell that's got a candidate in it skip it, otherwise it's not fully complete and an be filled) - if backtracked to here, use a different option
 	// 3. Solve each vertical cell connected to that candidate - if any are invalid backtrack to step 2
 	// 4. Repeat steps 1-4
 
-	workingCellRow, workingCellCol := b.nextEmptyCell()
-	if workingCellRow == nil || workingCellCol == nil {
+	emptyCellRow, emptyCellCol := nextEmptyCell(b.Grid)
+	if emptyCellRow == nil || emptyCellCol == nil {
 		return true
 	}
-	fmt.Printf("WORKING CELL: %d,%d\n", *workingCellRow, *workingCellCol)
+	fmt.Printf("WORKING CELL: %d,%d\n", *emptyCellRow, *emptyCellCol)
 
-	horizontalLengthOfWorkingCell := b.getPossibleHorizontalLength(*workingCellRow, *workingCellCol)
-	if horizontalLengthOfWorkingCell == nil {
-		return true
-	}
+	possibleCandidateLengths := b.getPossibleCandidateLengths(*emptyCellRow, *emptyCellCol)
+	fmt.Print("Possible lengths: ")
+	fmt.Println(possibleCandidateLengths)
 
-	possibleCandidates := b.CandidateMap[*horizontalLengthOfWorkingCell]
-	for canIndex, candidate := range possibleCandidates {
-		if validPlacement(b.Grid, candidate, *workingCellRow, *workingCellCol, 'h') {
-			newGrid, backupCells := place(b.Grid, candidate, *workingCellRow, *workingCellCol, 'h')
-			b.Grid = newGrid
-			b.CandidateMap[*horizontalLengthOfWorkingCell] = removeCandidateFromList(possibleCandidates, canIndex)
-			b.Display()
-			fmt.Println("Ready to move onto the next empty cell!")
-			bufio.NewReader(os.Stdin).ReadBytes('\n')
-			if b.Solve() {
-				return true
+	for _, length := range possibleCandidateLengths {
+		possibleCandidates := b.CandidateMap[length]
+		for canIndex, candidate := range possibleCandidates {
+			for _, direction := range directions {
+				if validPlacement(b.Grid, candidate, *emptyCellRow, *emptyCellCol, direction) {
+					newGrid, backupCells := place(b.Grid, candidate, *emptyCellRow, *emptyCellCol, direction)
+					b.Grid = newGrid
+					b.CandidateMap[length] = removeCandidateFromList(possibleCandidates, canIndex)
+					b.Display()
+					fmt.Println("Ready to move onto the next empty cell!")
+					bufio.NewReader(os.Stdin).ReadBytes('\n')
+					if b.Solve() {
+						return true
+					}
+					b.Grid = remove(b.Grid, candidate, *emptyCellRow, *emptyCellCol, direction, backupCells)
+					b.CandidateMap[length] = addCandidateToList(possibleCandidates, candidate)
+					fmt.Println("BACKTRACKED")
+				}
 			}
-			b.Grid = remove(b.Grid, candidate, *workingCellRow, *workingCellCol, 'h', backupCells)
-			b.CandidateMap[*horizontalLengthOfWorkingCell] = addCandidateToList(possibleCandidates, candidate)
-			fmt.Println("BACKTRACKED")
 		}
 	}
 
@@ -127,53 +130,56 @@ func addCandidateToList(list []string, candidate string) []string {
 	return append(list, candidate)
 }
 
-// Get Horizontal length of cell we are on
-func (b Board) getPossibleHorizontalLength(row int, col int) *int {
-	totalLength := 1 // Account for current cell
-	leftCell := 1
-	rightCell := 1
-	leftLength := 0
-	rightLength := 0
-	// Left
-	for col-leftCell>= 0 && b.Grid[row][col-leftCell] != b.DarkCell {
-		leftCell += 1
-		leftLength += 1
+// Checks for possible lengths given an empty cell
+func (b Board) getPossibleCandidateLengths(row int, col int) map[rune]int {
+	var possibleLengths map[rune]int
+	var totalLength int
+
+	for _, direction := range directions {
+		totalLength = 1 // Account for current cell
+		if direction == 'h' {
+			leftCell := 1
+			rightCell := 1
+			leftLength := 0
+			rightLength := 0
+			// Left
+			for col-leftCell>= 0 && b.Grid[row][col-leftCell] != b.DarkCell {
+				leftCell += 1
+				leftLength += 1
+			}
+			// Right
+			for col+rightCell < len(b.Grid) && b.Grid[row][col+rightCell] == '.' {
+				rightCell += 1
+				rightLength += 1
+			}
+			totalLength += leftLength + rightLength
+			fmt.Printf("This cells allows for a horizontal size of %d - leftLength: %d - rightLength: %d", totalLength, leftLength, rightLength)
+			fmt.Println()
+			possibleLengths[direction] = totalLength
+		}
+		if direction == 'v' {
+			upCell := 1
+			downCell := 1
+			upLength := 0
+			downLength := 0
+			// Up
+			for row-upCell >= 0 && b.Grid[row-upCell][col] != b.DarkCell {
+				upCell += 1
+				upLength += 1
+			}
+			// Down
+			for row+downCell < len(b.Grid) && b.Grid[row+downCell][col] != b.DarkCell {
+				downCell += 1
+				downLength += 1
+			}
+			totalLength += downLength + upLength
+			fmt.Printf("This cells allows for a vertical size of %d - upLength: %d - downLength: %d", totalLength, upLength, downLength)
+			fmt.Println()
+			possibleLengths = append(possibleLengths, totalLength)
+		}
+
 	}
-	// Right
-	for col+rightCell < len(b.Grid) && b.Grid[row][col+rightCell] == '.' {
-		rightCell += 1
-		rightLength += 1
-	}
-	totalLength += leftLength + rightLength
-	fmt.Printf("This cells allows for a horizontal size of %d - leftLength: %d - rightLength: %d\n", totalLength, leftLength, rightLength)
-	if leftLength == 0 && rightLength == 0 {
-		return nil
-	}
-	return &totalLength
-}
-// Get Vertical length of cell we are on
-func (b Board) getPossibleVerticalLength(row int, col int) *int {
-	totalLength := 1
-	upCell := 1
-	downCell := 1
-	upLength := 0
-	downLength := 0
-	// Up
-	for row-upCell >= 0 && b.Grid[row-upCell][col] != b.DarkCell {
-		upCell += 1
-		upLength += 1
-	}
-	// Down
-	for row+downCell < len(b.Grid) && b.Grid[row+downCell][col] != b.DarkCell {
-		downCell += 1
-		downLength += 1
-	}
-	totalLength += downLength + upLength
-	fmt.Printf("This cells allows for a vertical size of %d - upLength: %d - downLength: %d\n", totalLength, upLength, downLength)
-	if upLength == 0 && downCell == 0 {
-		return nil
-	}
-	return &totalLength
+	return possibleLengths
 }
 
 // Checks if the candidate can be placed down on the cell block without breaking a pre-existing vertical word
@@ -228,10 +234,10 @@ func remove(grid [][]rune, candidate string, row int, col int, direction rune, b
 }
 
 // Checks for next empty cell in the grid
-func (b Board) nextEmptyCell() (*int, *int) {
-	for row := range len(b.Grid) {
-		for col := range len(b.Grid[row]) {
-			if b.Grid[row][col] == '.' {
+func nextEmptyCell(grid [][]rune) (*int, *int) {
+	for row := range len(grid) {
+		for col := range len(grid[row]) {
+			if grid[row][col] == '.' {
 				return &row, &col
 			}
 		}
