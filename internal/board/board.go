@@ -7,6 +7,10 @@ import (
 	"slices"
 )
 
+// Current problems: 
+// 1. once all verticals are placed on a horizontal, there is no way to backtrack them...
+// 2. No way to place any candidate that's not at the beginning index of that candidate
+
 type Board struct {
 	Size         int
 	Grid         [][]rune
