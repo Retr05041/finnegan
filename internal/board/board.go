@@ -39,7 +39,7 @@ func (b Board) Solve() bool {
 	if workingCellRow == nil || workingCellCol == nil {
 		return true
 	}
-	fmt.Printf("WORKING CELL: %d,%d\n", *workingCellRow, *workingCellCol)
+	fmt.Printf("WORKING CELL H: %d,%d\n", *workingCellRow, *workingCellCol)
 
 	horizontalLengthOfWorkingCell := b.getPossibleHorizontalLength(*workingCellRow, *workingCellCol)
 	if horizontalLengthOfWorkingCell == nil {
@@ -55,6 +55,9 @@ func (b Board) Solve() bool {
 			b.Display()
 			fmt.Println("Ready to move onto the next empty cell!")
 			bufio.NewReader(os.Stdin).ReadBytes('\n')
+			if ! b.SolveVerticals(*workingCellRow, *workingCellCol) {
+				continue
+			}
 			if b.Solve() {
 				return true
 			}
@@ -64,6 +67,42 @@ func (b Board) Solve() bool {
 		}
 	}
 
+	return false
+}
+
+func (b Board) SolveVerticals(rowOfHorizontalCandidate int, colOfHorizontalCandidate int) bool {
+	workingCellRow, workingCellCol := rowOfHorizontalCandidate, colOfHorizontalCandidate
+	if workingCellRow > len(b.Grid) || workingCellCol > len(b.Grid[workingCellRow]) {
+		return true
+	}
+	if b.Grid[workingCellRow][workingCellCol] == b.DarkCell {
+		return true
+	}
+	fmt.Printf("WORKING CELL V: %d,%d\n", workingCellRow, workingCellCol)
+	
+	verticalLengthOfWorkingCell := b.getPossibleVerticalLength(workingCellRow, workingCellCol)
+	if verticalLengthOfWorkingCell == nil {
+		return true
+	}
+
+	possibleCandidates := b.CandidateMap[*verticalLengthOfWorkingCell]
+	for canIndex, candidate := range possibleCandidates {
+		fmt.Printf("Testing candidate: %s\n", candidate)
+		if validPlacement(b.Grid, candidate, workingCellRow, workingCellCol, 'v') {
+			newGrid, backupCells := place(b.Grid, candidate, workingCellRow, workingCellCol, 'v')
+			b.Grid = newGrid
+			b.CandidateMap[*verticalLengthOfWorkingCell] = removeCandidateFromList(possibleCandidates, canIndex)
+			b.Display()
+			fmt.Println("Ready to move onto the next vertical candidate")
+			bufio.NewReader(os.Stdin).ReadBytes('\n')
+			if b.SolveVerticals(workingCellRow, workingCellCol+1) {
+				return true
+			}
+			b.Grid = remove(b.Grid, candidate, workingCellRow, workingCellCol, 'v', backupCells)
+			b.CandidateMap[*verticalLengthOfWorkingCell] = addCandidateToList(possibleCandidates, candidate)
+			fmt.Println("BACKTRACKED")
+		}
+	}
 	return false
 }
 
@@ -83,13 +122,13 @@ func validPlacement(grid [][]rune, candidate string, row int, col int, direction
 		for i := range len(candidate) {
 			nextCell := grid[row][col+i]
 			if nextCell != '.' && nextCell != rune(candidate[i]) {
-				fmt.Println("Next cell is not a '.' or the same as the current cell?")
+				fmt.Println("Next cell is not a '.' or the same as the current cell")
 				return false
 			}
-			if nextCell == rune(candidate[i]) && !canOverlapVertically(grid, candidate, row, col+i) {
-				fmt.Println("Next cell is identical to what we want to place and it can't overlap the vertical word")
-				return false
-			}
+			//if nextCell == rune(candidate[i]) && !canOverlapVertically(grid, candidate, row, col+i) {
+			//	fmt.Println("Next cell is identical to what we want to place and it can't overlap the vertical word")
+			//	return false
+			//}
 		}
 	}
 
@@ -105,13 +144,13 @@ func validPlacement(grid [][]rune, candidate string, row int, col int, direction
 		for i := range len(candidate) {
 			nextCell := grid[row+i][col]
 			if nextCell != '.' && nextCell != rune(candidate[i]) {
-				fmt.Println("Next cell is not a '.' or the same as the current cell?")
+				fmt.Println("Next cell is not a '.' or the same as the current cell")
 				return false
 			}
-			if nextCell == rune(candidate[i]) && !canOverlapHorizontally(grid, candidate, row+i, col) {
-				fmt.Println("Next cell is identical to what we want to place and it can't overlap the vertical word")
-				return false
-			}
+			//if nextCell == rune(candidate[i]) && !canOverlapHorizontally(grid, candidate, row+i, col) {
+			//	fmt.Println("Next cell is identical to what we want to place and it can't overlap the vertical word")
+			//	return false
+			//}
 		}
 	}
 	return true
