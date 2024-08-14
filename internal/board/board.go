@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"slices"
 )
 
 type Board struct {
@@ -35,6 +36,7 @@ func (b Board) Solve() bool {
 	// 3. Solve each vertical cell connected to that candidate - if any are invalid backtrack to step 2
 	// 4. Repeat steps 1-4
 
+	var usedCandidates []string
 	workingCellRow, workingCellCol := b.nextEmptyCell()
 	if workingCellRow == nil || workingCellCol == nil {
 		return true
@@ -48,7 +50,11 @@ func (b Board) Solve() bool {
 
 	possibleCandidates := b.CandidateMap[*horizontalLengthOfWorkingCell]
 	for canIndex, candidate := range possibleCandidates {
+		if slices.Contains(usedCandidates, candidate) {
+			continue
+		}
 		if validPlacement(b.Grid, candidate, *workingCellRow, *workingCellCol, 'h') {
+			usedCandidates = append(usedCandidates, candidate)
 			newGrid, backupCells := place(b.Grid, candidate, *workingCellRow, *workingCellCol, 'h')
 			b.Grid = newGrid
 			b.CandidateMap[*horizontalLengthOfWorkingCell] = removeCandidateFromList(possibleCandidates, canIndex)
@@ -56,6 +62,9 @@ func (b Board) Solve() bool {
 			fmt.Println("Ready to move onto the next empty cell!")
 			bufio.NewReader(os.Stdin).ReadBytes('\n')
 			if ! b.SolveVerticals(*workingCellRow, *workingCellCol) {
+				b.Grid = remove(b.Grid, candidate, *workingCellRow, *workingCellCol, 'h', backupCells)
+				b.CandidateMap[*horizontalLengthOfWorkingCell] = addCandidateToList(possibleCandidates, candidate)
+				fmt.Println("BACKTRACKED")
 				continue
 			}
 			if b.Solve() {
@@ -71,6 +80,7 @@ func (b Board) Solve() bool {
 }
 
 func (b Board) SolveVerticals(rowOfHorizontalCandidate int, colOfHorizontalCandidate int) bool {
+	var usedCandidates []string
 	workingCellRow, workingCellCol := rowOfHorizontalCandidate, colOfHorizontalCandidate
 	if workingCellRow > len(b.Grid) || workingCellCol > len(b.Grid[workingCellRow]) {
 		return true
@@ -87,8 +97,12 @@ func (b Board) SolveVerticals(rowOfHorizontalCandidate int, colOfHorizontalCandi
 
 	possibleCandidates := b.CandidateMap[*verticalLengthOfWorkingCell]
 	for canIndex, candidate := range possibleCandidates {
+		if slices.Contains(usedCandidates, candidate) {
+			continue
+		}
 		fmt.Printf("Testing candidate: %s\n", candidate)
 		if validPlacement(b.Grid, candidate, workingCellRow, workingCellCol, 'v') {
+			usedCandidates = append(usedCandidates, candidate)
 			newGrid, backupCells := place(b.Grid, candidate, workingCellRow, workingCellCol, 'v')
 			b.Grid = newGrid
 			b.CandidateMap[*verticalLengthOfWorkingCell] = removeCandidateFromList(possibleCandidates, canIndex)
