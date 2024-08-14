@@ -63,20 +63,21 @@ func (b Board) Solve() bool {
 			b.Grid = newGrid
 			b.CandidateMap[*horizontalLengthOfWorkingCell] = removeCandidateFromList(possibleCandidates, canIndex)
 			b.Display()
-			fmt.Println("Ready to move onto the next empty cell!")
+			fmt.Println("ready to move to the verticals!")
 			bufio.NewReader(os.Stdin).ReadBytes('\n')
 			if ! b.SolveVerticals(*workingCellRow, *workingCellCol) {
 				b.Grid = remove(b.Grid, candidate, *workingCellRow, *workingCellCol, 'h', backupCells)
 				b.CandidateMap[*horizontalLengthOfWorkingCell] = addCandidateToList(possibleCandidates, candidate)
-				fmt.Println("BACKTRACKED")
+				fmt.Println("BACKTRACKED VERTICALS - Attempting next horizontal")
 				continue
 			}
+			fmt.Println("Ready to move onto the next empty cell!")
 			if b.Solve() {
 				return true
 			}
 			b.Grid = remove(b.Grid, candidate, *workingCellRow, *workingCellCol, 'h', backupCells)
 			b.CandidateMap[*horizontalLengthOfWorkingCell] = addCandidateToList(possibleCandidates, candidate)
-			fmt.Println("BACKTRACKED")
+			fmt.Println("BACKTRACKED HORIZONTAL")
 		}
 	}
 
@@ -86,7 +87,7 @@ func (b Board) Solve() bool {
 func (b Board) SolveVerticals(rowOfHorizontalCandidate int, colOfHorizontalCandidate int) bool {
 	var usedCandidates []string
 	workingCellRow, workingCellCol := rowOfHorizontalCandidate, colOfHorizontalCandidate
-	if workingCellRow > len(b.Grid) || workingCellCol > len(b.Grid[workingCellRow]) {
+	if workingCellRow > len(b.Grid) || workingCellCol > len(b.Grid)-1 {
 		return true
 	}
 	if b.Grid[workingCellRow][workingCellCol] == b.DarkCell {
@@ -118,7 +119,7 @@ func (b Board) SolveVerticals(rowOfHorizontalCandidate int, colOfHorizontalCandi
 			}
 			b.Grid = remove(b.Grid, candidate, workingCellRow, workingCellCol, 'v', backupCells)
 			b.CandidateMap[*verticalLengthOfWorkingCell] = addCandidateToList(possibleCandidates, candidate)
-			fmt.Println("BACKTRACKED")
+			fmt.Println("BACKTRACKED VERTICAL")
 		}
 	}
 	return false
@@ -140,7 +141,7 @@ func validPlacement(grid [][]rune, candidate string, row int, col int, direction
 		for i := range len(candidate) {
 			nextCell := grid[row][col+i]
 			if nextCell != '.' && nextCell != rune(candidate[i]) {
-				fmt.Println("Next cell is not a '.' or the same as the current cell")
+				//fmt.Println("Next cell is not a '.' or the same as the current cell")
 				return false
 			}
 			//if nextCell == rune(candidate[i]) && !canOverlapVertically(grid, candidate, row, col+i) {
@@ -162,7 +163,7 @@ func validPlacement(grid [][]rune, candidate string, row int, col int, direction
 		for i := range len(candidate) {
 			nextCell := grid[row+i][col]
 			if nextCell != '.' && nextCell != rune(candidate[i]) {
-				fmt.Println("Next cell is not a '.' or the same as the current cell")
+				//fmt.Println("Next cell is not a '.' or the same as the current cell")
 				return false
 			}
 			//if nextCell == rune(candidate[i]) && !canOverlapHorizontally(grid, candidate, row+i, col) {
