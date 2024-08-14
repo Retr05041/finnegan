@@ -32,6 +32,31 @@ func (b Board) Display() {
 	}
 }
 
+
+func (b Board) SolveGame1Test() bool {
+	// 70983
+	_ = b.place("70983", 0, 2, 'h', 0)
+	_ = b.place("701", 0, 2, 'v', 0)
+
+
+	horizontalLengthOfWorkingCell, leftHorizontalLength, rightHorizontalLength := b.getHorizontalLength(1,3)
+	if horizontalLengthOfWorkingCell == nil {
+		return true
+	}
+
+	possibleHorizontalCandidates := b.CandidateMap[*horizontalLengthOfWorkingCell]
+	for _, horizontalCandidate := range possibleHorizontalCandidates {
+		fmt.Println("Current horizontal candidate: "+horizontalCandidate)
+		if isHorizontalValid, _:= validHorizontalPlacement(b.Grid, horizontalCandidate, 1, 3, leftHorizontalLength, rightHorizontalLength); isHorizontalValid {
+			_= b.place(horizontalCandidate, 1, 3, 'h', leftHorizontalLength)
+			b.Display()
+			fmt.Println("ready to move to the verticals!")
+			bufio.NewReader(os.Stdin).ReadBytes('\n')
+		}
+	}
+	return false
+}
+
 // Main runner function
 func (b Board) Solve() bool {
 	// STEPS:
@@ -64,6 +89,7 @@ func (b Board) Solve() bool {
 		if slices.Contains(usedHorizontalCandidates, horizontalCandidate) {
 			continue
 		}
+		fmt.Println("Current horizontal candidate: "+horizontalCandidate)
 		// If it's a Valid placement -- this will need to check back and forth, currently just checks forth
 		if isHorizontalValid, unFilledCells := validHorizontalPlacement(b.Grid, horizontalCandidate, *workingCellRow, *workingCellCol, leftHorizontalLength, rightHorizontalLength); isHorizontalValid {
 			usedHorizontalCandidates = append(usedHorizontalCandidates, horizontalCandidate)
@@ -103,7 +129,7 @@ func (b Board) Solve() bool {
 					}
 				}
 			}
-			b.remove(horizontalCandidate, *workingCellRow, *workingCellCol, 'h', backupCells, 0)
+			b.remove(horizontalCandidate, *workingCellRow, *workingCellCol, 'h', backupCells, leftHorizontalLength)
 			b.CandidateMap[*horizontalLengthOfWorkingCell] = addCandidateToList(possibleHorizontalCandidates, horizontalCandidate)
 			fmt.Println("BACKTRACKED HORIZONTAL")
 		}
@@ -119,7 +145,7 @@ func validHorizontalPlacement(grid [][]rune, candidate string, row int, col int,
 		fmt.Printf("The candidate goes off the board - start col: %d, candidate length: %d, row length: %d\n", col, len(candidate), len(grid[row]))
 		return false, nil
 	}
-	// If it's too small
+	// If it's too small -- might be redundant
 	if col+rightLength+1 < len(grid[row]) && grid[row][col+rightLength+1] == '.' || col-leftLength-1 > 0 && grid[row][col-leftLength-1] == '.' {
 		fmt.Printf("It's too small to fit -- %d < %d && %t || %d > 0 && %t\n", col+rightLength, len(grid[row]), grid[row][col+rightLength+1] == '.', col-leftLength, grid[row][col-leftLength-1] == '.')
 		return false, nil
@@ -143,6 +169,7 @@ func validHorizontalPlacement(grid [][]rune, candidate string, row int, col int,
 			nextCell := grid[row][col-l]
 			if nextCell == '.' {
 				unFilledCells = append(unFilledCells, col-l)
+				continue
 			}
 			if nextCell != '.' && nextCell != rune(candidate[l]) {
 				//fmt.Println("Next cell is not a '.' or the same as the current cell")
