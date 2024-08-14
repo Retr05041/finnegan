@@ -7,7 +7,7 @@ import (
 	"slices"
 )
 
-// Current problems: 
+// Current problems:
 // 1. once all verticals are placed on a horizontal, there is no way to backtrack them...
 // 2. No way to place any candidate that's not at the beginning index of that candidate
 
@@ -40,43 +40,73 @@ func (b Board) Solve() bool {
 	// 3. Solve each vertical cell connected to that candidate - if any are invalid backtrack to step 2
 	// 4. Repeat steps 1-4
 
-	var usedCandidates []string
+	// Store this recursion steps used candidates
+	var usedHorizontalCandidates []string
+	var usedVerticalCandidates []string
+
+	// Find the next cell for horizontal placement
 	workingCellRow, workingCellCol := b.nextEmptyCell()
 	if workingCellRow == nil || workingCellCol == nil {
 		return true
 	}
-	fmt.Printf("WORKING CELL H: %d,%d\n", *workingCellRow, *workingCellCol)
+	fmt.Printf("WORKING HORZONTAL CELL: %d,%d\n", *workingCellRow, *workingCellCol)
 
+	// Get the length of the current horizontal cell block
 	horizontalLengthOfWorkingCell := b.getPossibleHorizontalLength(*workingCellRow, *workingCellCol)
 	if horizontalLengthOfWorkingCell == nil {
 		return true
 	}
 
-	possibleCandidates := b.CandidateMap[*horizontalLengthOfWorkingCell]
-	for canIndex, candidate := range possibleCandidates {
-		if slices.Contains(usedCandidates, candidate) {
+	// Loop through every candidate
+	possibleHorizontalCandidates := b.CandidateMap[*horizontalLengthOfWorkingCell]
+	for horizontalCanIndex, horizontalCandidate := range possibleHorizontalCandidates {
+		// If it's already been tried skip
+		if slices.Contains(usedHorizontalCandidates, horizontalCandidate) {
 			continue
 		}
-		if validPlacement(b.Grid, candidate, *workingCellRow, *workingCellCol, 'h') {
-			usedCandidates = append(usedCandidates, candidate)
-			newGrid, backupCells := place(b.Grid, candidate, *workingCellRow, *workingCellCol, 'h')
+		// If it's a Valid placement -- this will need to check back and forth, currently just checks forth
+		if isHorizontalValid, unFilledCells := validHorizontalPlacement(b.Grid, horizontalCandidate, *workingCellRow, *workingCellCol); isHorizontalValid {
+			usedHorizontalCandidates = append(usedHorizontalCandidates, horizontalCandidate)
+			newGrid, backupCells := place(b.Grid, horizontalCandidate, *workingCellRow, *workingCellCol, 'h')
 			b.Grid = newGrid
-			b.CandidateMap[*horizontalLengthOfWorkingCell] = removeCandidateFromList(possibleCandidates, canIndex)
+			b.CandidateMap[*horizontalLengthOfWorkingCell] = removeCandidateFromList(possibleHorizontalCandidates, horizontalCanIndex)
 			b.Display()
 			fmt.Println("ready to move to the verticals!")
 			bufio.NewReader(os.Stdin).ReadBytes('\n')
-			if ! b.SolveVerticals(*workingCellRow, *workingCellCol) {
-				b.Grid = remove(b.Grid, candidate, *workingCellRow, *workingCellCol, 'h', backupCells)
-				b.CandidateMap[*horizontalLengthOfWorkingCell] = addCandidateToList(possibleCandidates, candidate)
-				fmt.Println("BACKTRACKED VERTICALS - Attempting next horizontal")
-				continue
+
+			// While the verticals aren't solved.. -- validPlacement might need to return the locations of any characters that were freshly placed, as those are the ones in need of a vertical solve
+			for _, cellColLocation := range unFilledCells {
+				fmt.Printf("WORKING VERTICAL CELL: %d,%d\n", *workingCellRow, cellColLocation)
+
+				verticalLengthOfWorkingCell := b.getPossibleVerticalLength(*workingCellRow, cellColLocation)
+				if verticalLengthOfWorkingCell == nil {
+					return true
+				}
+
+				possibleVerticalCandidates := b.CandidateMap[*verticalLengthOfWorkingCell]
+				for verticalCanIndex, verticalCandidate := range possibleVerticalCandidates {
+					if slices.Contains(usedVerticalCandidates, verticalCandidate) {
+						continue
+					}
+					if validVerticalPlacement(b.Grid, verticalCandidate, *workingCellRow, cellColLocation) {
+						usedVerticalCandidates = append(usedVerticalCandidates, verticalCandidate)
+						newVerticalGrid, backupVerticalCells := place(b.Grid, verticalCandidate, *workingCellRow, cellColLocation, 'v')
+						b.Grid = newVerticalGrid
+						b.CandidateMap[*verticalLengthOfWorkingCell] = removeCandidateFromList(possibleVerticalCandidates, verticalCanIndex)
+						b.Display()
+						fmt.Println("Ready to move to the next empty cell!")
+						bufio.NewReader(os.Stdin).ReadBytes('\n')
+						if b.Solve() {
+							return true
+						}
+						b.Grid = remove(b.Grid, verticalCandidate, *workingCellRow, cellColLocation, 'v', backupVerticalCells)
+						b.CandidateMap[*verticalLengthOfWorkingCell] = addCandidateToList(possibleVerticalCandidates, verticalCandidate)
+						fmt.Println("BACKTRACKED VERTICAL")
+					}
+				}
 			}
-			fmt.Println("Ready to move onto the next empty cell!")
-			if b.Solve() {
-				return true
-			}
-			b.Grid = remove(b.Grid, candidate, *workingCellRow, *workingCellCol, 'h', backupCells)
-			b.CandidateMap[*horizontalLengthOfWorkingCell] = addCandidateToList(possibleCandidates, candidate)
+			b.Grid = remove(b.Grid, horizontalCandidate, *workingCellRow, *workingCellCol, 'h', backupCells)
+			b.CandidateMap[*horizontalLengthOfWorkingCell] = addCandidateToList(possibleHorizontalCandidates, horizontalCandidate)
 			fmt.Println("BACKTRACKED HORIZONTAL")
 		}
 	}
@@ -84,93 +114,56 @@ func (b Board) Solve() bool {
 	return false
 }
 
-func (b Board) SolveVerticals(rowOfHorizontalCandidate int, colOfHorizontalCandidate int) bool {
-	var usedCandidates []string
-	workingCellRow, workingCellCol := rowOfHorizontalCandidate, colOfHorizontalCandidate
-	if workingCellRow > len(b.Grid) || workingCellCol > len(b.Grid)-1 {
-		return true
+// Checks if a candidate can be placed horizontally
+func validHorizontalPlacement(grid [][]rune, candidate string, row int, col int) (bool, []int) {
+	var unFilledCells []int
+	if col < 0 || row < 0 || row >= len(grid) || col+len(candidate)-1 > len(grid[row]) {
+		fmt.Printf("The candidate goes off the board - start col: %d, candidate length: %d, row length: %d\n", col, len(candidate), len(grid[row]))
+		return false, nil
 	}
-	if b.Grid[workingCellRow][workingCellCol] == b.DarkCell {
-		return true
+	// If it's too small
+	if col+len(candidate) < len(grid[row]) && grid[row][col+len(candidate)] == '.' {
+		fmt.Println("It's too small to fit")
+		return false, nil
 	}
-	fmt.Printf("WORKING CELL V: %d,%d\n", workingCellRow, workingCellCol)
-	
-	verticalLengthOfWorkingCell := b.getPossibleVerticalLength(workingCellRow, workingCellCol)
-	if verticalLengthOfWorkingCell == nil {
-		return true
-	}
-
-	possibleCandidates := b.CandidateMap[*verticalLengthOfWorkingCell]
-	for canIndex, candidate := range possibleCandidates {
-		if slices.Contains(usedCandidates, candidate) {
-			continue
+	// if it place nicely amongst the black cells and other words
+	for i := range len(candidate) {
+		nextCell := grid[row][col+i]
+		if nextCell == '.' {
+			unFilledCells = append(unFilledCells, col+i)
 		}
-		fmt.Printf("Testing candidate: %s\n", candidate)
-		if validPlacement(b.Grid, candidate, workingCellRow, workingCellCol, 'v') {
-			usedCandidates = append(usedCandidates, candidate)
-			newGrid, backupCells := place(b.Grid, candidate, workingCellRow, workingCellCol, 'v')
-			b.Grid = newGrid
-			b.CandidateMap[*verticalLengthOfWorkingCell] = removeCandidateFromList(possibleCandidates, canIndex)
-			b.Display()
-			fmt.Println("Ready to move onto the next vertical candidate")
-			bufio.NewReader(os.Stdin).ReadBytes('\n')
-			if b.SolveVerticals(workingCellRow, workingCellCol+1) {
-				return true
-			}
-			b.Grid = remove(b.Grid, candidate, workingCellRow, workingCellCol, 'v', backupCells)
-			b.CandidateMap[*verticalLengthOfWorkingCell] = addCandidateToList(possibleCandidates, candidate)
-			fmt.Println("BACKTRACKED VERTICAL")
+		if nextCell != '.' && nextCell != rune(candidate[i]) {
+			//fmt.Println("Next cell is not a '.' or the same as the current cell")
+			return false, nil
 		}
+		//if nextCell == rune(candidate[i]) && !canOverlapVertically(grid, candidate, row, col+i) {
+		//	fmt.Println("Next cell is identical to what we want to place and it can't overlap the vertical word")
+		//	return false
+		//}
 	}
-	return false
+	return true, unFilledCells
 }
 
-// Checks if a candidate can be placed at that location without breaking rules of the game - only works if the init row and col are empty
-func validPlacement(grid [][]rune, candidate string, row int, col int, direction rune) bool {
-	if direction == 'h' {
-		if col < 0 || row < 0 || row >= len(grid) || col+len(candidate)-1 > len(grid[row]) {
-			fmt.Printf("The candidate goes off the board - start col: %d, candidate length: %d, row length: %d\n", col, len(candidate), len(grid[row]))
-			return false
-		}
-		// If it's too small
-		if col+len(candidate) < len(grid[row]) && grid[row][col+len(candidate)] == '.' {
-			fmt.Println("It's too small to fit")
-			return false
-		}
-		// if it place nicely amongst the black cells and other words
-		for i := range len(candidate) {
-			nextCell := grid[row][col+i]
-			if nextCell != '.' && nextCell != rune(candidate[i]) {
-				//fmt.Println("Next cell is not a '.' or the same as the current cell")
-				return false
-			}
-			//if nextCell == rune(candidate[i]) && !canOverlapVertically(grid, candidate, row, col+i) {
-			//	fmt.Println("Next cell is identical to what we want to place and it can't overlap the vertical word")
-			//	return false
-			//}
-		}
+// Checks if a candidate can be placed vertically
+func validVerticalPlacement(grid [][]rune, candidate string, row int, col int) bool {
+	if col < 0 || row < 0 || col >= len(grid) || row+len(candidate)-1 > len(grid)-1 {
+		fmt.Printf("The candidate goes off the board - start row: %d, candidate length: %d, col length: %d\n", row, len(candidate), col)
+		return false
 	}
-
-	if direction == 'v' {
-		if col < 0 || row < 0 || col >= len(grid) || row+len(candidate)-1 > len(grid)-1 {
-			fmt.Printf("The candidate goes off the board - start row: %d, candidate length: %d, col length: %d\n", row, len(candidate), col)
+	if row+len(candidate) < len(grid)-1 && grid[row+len(candidate)][col] == '.' {
+		fmt.Println("It's too small to fit")
+		return false
+	}
+	for i := range len(candidate) {
+		nextCell := grid[row+i][col]
+		if nextCell != '.' && nextCell != rune(candidate[i]) {
+			//fmt.Println("Next cell is not a '.' or the same as the current cell")
 			return false
 		}
-		if row+len(candidate) < len(grid)-1 && grid[row+len(candidate)][col] == '.' {
-			fmt.Println("It's too small to fit")
-			return false
-		}
-		for i := range len(candidate) {
-			nextCell := grid[row+i][col]
-			if nextCell != '.' && nextCell != rune(candidate[i]) {
-				//fmt.Println("Next cell is not a '.' or the same as the current cell")
-				return false
-			}
-			//if nextCell == rune(candidate[i]) && !canOverlapHorizontally(grid, candidate, row+i, col) {
-			//	fmt.Println("Next cell is identical to what we want to place and it can't overlap the vertical word")
-			//	return false
-			//}
-		}
+		//if nextCell == rune(candidate[i]) && !canOverlapHorizontally(grid, candidate, row+i, col) {
+		//	fmt.Println("Next cell is identical to what we want to place and it can't overlap the vertical word")
+		//	return false
+		//}
 	}
 	return true
 }
@@ -185,6 +178,11 @@ func addCandidateToList(list []string, candidate string) []string {
 	return append(list, candidate)
 }
 
+func removeUnfilledCell(list []int, cellIndex int) []int {
+	list[cellIndex] = list[len(list)-1]
+	return list[:len(list)-1]
+}
+
 // Get Horizontal length of cell we are on
 func (b Board) getPossibleHorizontalLength(row int, col int) *int {
 	totalLength := 1 // Account for current cell
@@ -193,7 +191,7 @@ func (b Board) getPossibleHorizontalLength(row int, col int) *int {
 	leftLength := 0
 	rightLength := 0
 	// Left
-	for col-leftCell>= 0 && b.Grid[row][col-leftCell] != b.DarkCell {
+	for col-leftCell >= 0 && b.Grid[row][col-leftCell] != b.DarkCell {
 		leftCell += 1
 		leftLength += 1
 	}
@@ -209,6 +207,7 @@ func (b Board) getPossibleHorizontalLength(row int, col int) *int {
 	}
 	return &totalLength
 }
+
 // Get Vertical length of cell we are on
 func (b Board) getPossibleVerticalLength(row int, col int) *int {
 	totalLength := 1
