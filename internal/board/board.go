@@ -16,6 +16,8 @@ type Board struct {
 	Grid         [][]rune
 	CandidateMap map[int][]string
 	DarkCell     rune
+	CurrentRow   int
+	CurrentCol   int
 }
 
 var (
@@ -46,7 +48,7 @@ func (b Board) SolveGame1Test() bool {
 	b.Display()
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	b.Display()
-	_, leftLength, rightLength := b.getHorizontalLengths(2,4)
+	_, leftLength, rightLength := b.getHorizontalLengths(2, 4)
 	fmt.Printf("leftLength: %d - rightLength: %d", leftLength, rightLength)
 	if b.validHorizontalPlacement("637047", 2, 4, leftLength, rightLength) {
 		_ = b.placeHorizontal("637047", 2, 4, leftLength)
@@ -55,114 +57,31 @@ func (b Board) SolveGame1Test() bool {
 		fmt.Println("Can't fit..")
 	}
 
-
-
-
-
 	return false
 }
 
 // Main runner function
 func (b Board) Solve() bool {
 	// NEW STEPS
-	// get the first empty cell (this function) and pass it to the solver function to start us off solver(nextrow, nextcol)
-	// Go to every non dark cell cell
-	// check for h and v empties - if there is none check that word against the wordlist to see if it's valid - if not backtrack
-	// if there is an empty find something that solves it and continue forward - if not backtrack
+	// Will need a global timeline of type Cellblock that will hold all the info for a given h or v cellblock - this will be our backtracking format
 
+	// next valid cell
+	// horizontal check
+		// if big enough to fit a word
+			// if no open cells
+				// Check if cellblock if valid
+					// if not backtrack
+			// fit word
+				// if no words fit then backtrack
+	// vertical check
+		// identical to horizontal?
 
-
-	// Store this recursion steps used candidates
-	var usedHorizontalCandidates []string
-	var usedVerticalCandidates []string
-
-	// Find the next cell for horizontal placement
-	workingCellRow, workingCellCol := b.nextEmptyCell()
-	if workingCellRow == nil || workingCellCol == nil {
-		return true
-	}
-	fmt.Printf("WORKING HORZONTAL CELL: %d,%d\n", *workingCellRow, *workingCellCol)
-
-	// Get the length of the current horizontal cell block
-	horizontalLengthOfCellBlock, leftLength, rightLength := b.getHorizontalLengths(*workingCellRow, *workingCellCol)
-	if horizontalLengthOfCellBlock == nil {
+	
+	nextValidRow, nextValidCol := b.nextValidCell()
+	if nextValidRow == nil || nextValidCol == nil {
 		return true
 	}
 
-	// Loop through every candidate
-	horizontalCandidates := b.CandidateMap[*horizontalLengthOfCellBlock]
-	fmt.Print("Horizontal candidates: ")
-	fmt.Println(horizontalCandidates)
-
-	for _, horizontalCandidate := range horizontalCandidates {
-		// If it's already been tried skip
-		if slices.Contains(usedHorizontalCandidates, horizontalCandidate) {
-			fmt.Println("Already tried - " + horizontalCandidate + " - Skipping...")
-			continue
-		}
-
-		fmt.Println("Current horizontal candidate: " + horizontalCandidate)
-
-		// If it's a Valid placement
-		if b.validHorizontalPlacement(horizontalCandidate, *workingCellRow, *workingCellCol, leftLength, rightLength) {
-			usedHorizontalCandidates = append(usedHorizontalCandidates, horizontalCandidate)
-
-			backupCells := b.placeHorizontal(horizontalCandidate, *workingCellRow, *workingCellCol, leftLength)
-			b.CandidateMap[*horizontalLengthOfCellBlock] = removeCandidateFromList(horizontalCandidates, horizontalCandidate)
-
-			b.Display()
-			fmt.Println("Ready to place the vertical at this cell!")
-			bufio.NewReader(os.Stdin).ReadBytes('\n')
-
-			fmt.Printf("WORKING VERTICAL CELL: %d,%d\n", *workingCellRow, *workingCellCol)
-
-			verticalLengthOfCellBlock, upLength, downLength := b.getVerticalLengths(*workingCellRow, *workingCellCol)
-			if verticalLengthOfCellBlock == nil {
-				return true
-			}
-
-			verticalCandidates := b.CandidateMap[*verticalLengthOfCellBlock]
-			fmt.Print("Vertical candidates: ")
-			fmt.Println(verticalCandidates)
-
-			for _, verticalCandidate := range verticalCandidates {
-				if slices.Contains(usedVerticalCandidates, verticalCandidate) {
-					fmt.Println("Already tried - " + verticalCandidate + " - Skipping...")
-					continue
-				}
-				fmt.Println("Current vertical candidate: " + verticalCandidate)
-				if b.validVerticalPlacement(verticalCandidate, *workingCellRow, *workingCellCol, upLength, downLength) {
-					usedVerticalCandidates = append(usedVerticalCandidates, verticalCandidate)
-					backupVerticalCells := b.placeVertical(verticalCandidate, *workingCellRow, *workingCellCol, upLength)
-					b.CandidateMap[*verticalLengthOfCellBlock] = removeCandidateFromList(verticalCandidates, verticalCandidate)
-
-
-					b.Display()
-					fmt.Println("Ready to move to the next empty cell!")
-					bufio.NewReader(os.Stdin).ReadBytes('\n')
-					if b.Solve() {
-						return true
-					}
-
-
-					b.removeVertical(verticalCandidate, *workingCellRow, *workingCellCol, backupVerticalCells, upLength)
-					b.CandidateMap[*verticalLengthOfCellBlock] = addCandidateToList(verticalCandidates, verticalCandidate)
-					fmt.Println("BACKTRACKED VERTICAL")
-				}
-			}
-			fmt.Println("Tried ever vertical candidate at this cell.")
-			b.removeHorizontal(horizontalCandidate, *workingCellRow, *workingCellCol, backupCells, leftLength)
-			b.CandidateMap[*horizontalLengthOfCellBlock] = addCandidateToList(horizontalCandidates, horizontalCandidate)
-			for _,usedVerticalCandidate := range usedVerticalCandidates {
-				usedVerticalCandidates = addCandidateToList(usedHorizontalCandidates, usedVerticalCandidate)
-			}
-			fmt.Println("BACKTRACKED HORIZONTAL")
-		}
-	}
-	fmt.Println("Tried ever horizontal candidate at this cell.")
-	for _,usedHorizontalCandidate := range usedHorizontalCandidates {
-		usedHorizontalCandidates = addCandidateToList(usedHorizontalCandidates, usedHorizontalCandidate)
-	}
 
 	return false
 }
@@ -254,7 +173,7 @@ func (b Board) validVerticalPlacement(candidate string, row int, col int, upLeng
 // -- HELPER FUNCTIONS ---
 func removeCandidateFromList(list []string, candidate string) []string {
 	newList := []string{}
-	for _,item := range list {
+	for _, item := range list {
 		if item != candidate {
 			newList = append(newList, item)
 		}
@@ -263,7 +182,7 @@ func removeCandidateFromList(list []string, candidate string) []string {
 }
 
 func addCandidateToList(list []string, candidate string) []string {
-	for _,item := range list {
+	for _, item := range list {
 		if item == candidate {
 			return list
 		}
@@ -350,7 +269,6 @@ func (b Board) removeHorizontal(candidate string, row int, col int, backupCellSe
 	}
 }
 
-
 func (b Board) removeVertical(candidate string, row int, col int, backupCellSequence []rune, startIndexOfCandidate int) {
 	for i := range len(candidate) {
 		gridRowOffset := row + (i - startIndexOfCandidate)
@@ -363,6 +281,17 @@ func (b Board) nextEmptyCell() (*int, *int) {
 	for row := range len(b.Grid) {
 		for col := range len(b.Grid[row]) {
 			if b.Grid[row][col] == '.' {
+				return &row, &col
+			}
+		}
+	}
+	return nil, nil
+}
+
+func (b Board) nextValidCell() (*int, *int) {
+	for row := range len(b.Grid) {
+		for col := range len(b.Grid[row]) {
+			if b.Grid[row][col] != b.DarkCell {
 				return &row, &col
 			}
 		}
