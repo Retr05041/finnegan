@@ -64,6 +64,7 @@ func (b Board) SolveGame1Test() bool {
 func (b Board) Solve() bool {
 	// NEW STEPS
 	// Will need a global timeline of type Cellblock that will hold all the info for a given h or v cellblock - this will be our backtracking format
+	// Local timeline of used words for current cell block...
 
 	// next valid cell
 	// horizontal check
