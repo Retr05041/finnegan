@@ -12,7 +12,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if board.SolveGame1Test() {
+	if board.Solve() {
 		board.Display()
 	} else {
 		fmt.Println("Could not solve puzzle.")

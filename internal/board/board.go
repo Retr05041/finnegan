@@ -47,6 +47,7 @@ func (b Board) SolveGame1Test() bool {
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	b.Display()
 	_, leftLength, rightLength := b.getHorizontalLengths(2,4)
+	fmt.Printf("leftLength: %d - rightLength: %d", leftLength, rightLength)
 	if b.validHorizontalPlacement("637047", 2, 4, leftLength, rightLength) {
 		_ = b.placeHorizontal("637047", 2, 4, leftLength)
 		b.Display()
@@ -63,6 +64,14 @@ func (b Board) SolveGame1Test() bool {
 
 // Main runner function
 func (b Board) Solve() bool {
+	// NEW STEPS
+	// get the first empty cell (this function) and pass it to the solver function to start us off solver(nextrow, nextcol)
+	// Go to every non dark cell cell
+	// check for h and v empties - if there is none check that word against the wordlist to see if it's valid - if not backtrack
+	// if there is an empty find something that solves it and continue forward - if not backtrack
+
+
+
 	// Store this recursion steps used candidates
 	var usedHorizontalCandidates []string
 	var usedVerticalCandidates []string
@@ -177,8 +186,8 @@ func (b Board) validHorizontalPlacement(candidate string, row int, col int, left
 			if nextCell == '.' {
 				continue
 			}
-			if nextCell != '.' && nextCell != rune(candidate[l-1-rightLength]) { // So close... this is broken...
-				fmt.Printf("Cell %d,%d is not a '.' or %c\n", row, col-l, rune(candidate[l-1-rightLength]))
+			if nextCell != '.' && nextCell != rune(candidate[leftLength-l]) { // So close... this is broken...
+				fmt.Printf("Cell %d,%d is not a '.' or %c\n", row, col-l, rune(candidate[leftLength-l]))
 				return false
 			}
 		}
@@ -220,7 +229,7 @@ func (b Board) validVerticalPlacement(candidate string, row int, col int, upLeng
 			if nextCell == '.' {
 				continue
 			}
-			if nextCell != '.' && nextCell != rune(candidate[u-1]) {
+			if nextCell != '.' && nextCell != rune(candidate[upLength-u]) {
 				fmt.Printf("Cell %d,%d is not a '.' or the same as the current cell\n", row-u, col)
 				return false
 			}
@@ -233,7 +242,7 @@ func (b Board) validVerticalPlacement(candidate string, row int, col int, upLeng
 			if nextCell == '.' {
 				continue
 			}
-			if nextCell != '.' && nextCell != rune(candidate[d-1]) {
+			if nextCell != '.' && nextCell != rune(candidate[upLength+d]) {
 				fmt.Printf("Cell %d,%d is not a '.' or the same as the current cell\n", row+d, col)
 				return false
 			}
@@ -326,7 +335,7 @@ func (b Board) placeVertical(candidate string, row int, col int, startIndexOfCan
 	var backupCellSequence []rune
 	for i := range len(candidate) {
 		gridRowOffset := row + (i - startIndexOfCandidate)
-		if gridRowOffset >= 0 && gridRowOffset < len(b.Grid)-1 {
+		if gridRowOffset >= 0 && gridRowOffset < len(b.Grid) {
 			backupCellSequence = append(backupCellSequence, b.Grid[gridRowOffset][col])
 			b.Grid[gridRowOffset][col] = rune(candidate[i])
 		}
