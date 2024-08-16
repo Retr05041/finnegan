@@ -3,6 +3,7 @@ package reader
 import (
 	"bufio"
 	"finnegan/internal/board"
+	"finnegan/internal/cellblock"
 	"os"
 	"strconv"
 )
@@ -18,6 +19,8 @@ func Read(gamePath string) (*board.Board, error) {
 	fileReader := bufio.NewReader(file)
 	newBoard := new(board.Board)
 	newBoard.DarkCell = '■'
+	newBoard.CurrentRow = nil
+	newBoard.CurrentCol = nil
 	newBoard.CandidateMap = make(map[int][]string)
 
 	// Get Grid size
@@ -56,21 +59,25 @@ func Read(gamePath string) (*board.Board, error) {
 
 	// Gather numbers from file
 	for {
-        line, err := fileReader.ReadString('\n')
-        if err != nil {
-            if err.Error() != "EOF" {
+		line, err := fileReader.ReadString('\n')
+		if err != nil {
+			if err.Error() != "EOF" {
 				return nil, err
-            }
-            break
-        }
+			}
+			break
+		}
 		line = line[:len(line)-1]
+		newBoard.CandidateReference = append(newBoard.CandidateReference, line)
 
 		if existingCandidates, ok := newBoard.CandidateMap[len(line)]; ok {
 			newBoard.CandidateMap[len(line)] = append(existingCandidates, line)
 		} else {
 			newBoard.CandidateMap[len(line)] = []string{line}
 		}
-    }
+	}
+
+	// Initialize Timeline
+	newBoard.Timeline = make([]cellblock.CellBlock, len(newBoard.CandidateReference))
 
 	return newBoard, nil
 }
