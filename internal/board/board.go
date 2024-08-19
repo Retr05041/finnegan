@@ -18,7 +18,7 @@ type Board struct {
 	CurrentCol         *int
 	HorizontalDone     bool
 	VerticalDone       bool
-	Timeline           []cellblock.CellBlock
+	Timeline           cellblock.TimeLine
 }
 
 var (
@@ -63,25 +63,8 @@ func (b Board) SolveGame1Test() bool {
 
 // Main runner function
 func (b Board) Solve() bool {
-	// NEW STEPS
-	// Will need a global timeline of type Cellblock that will hold all the info for a given h or v cellblock - this will be our backtracking format
-	// Local timeline of used words for current cell block...
-
-	// next valid cell
-	// horizontal check
-	// if big enough to fit a word
-	// if no open cells
-	// Check if cellblock if valid
-	// if not backtrack
-	// fit word
-	// if no words fit then backtrack
-	// vertical check
-	// identical to horizontal?
-
-
 	var triedHorizontalCandidates []string
 
-	
 	if b.CurrentRow == nil || b.CurrentCol == nil { // First iteration cell set
 		b.nextValidCell()
 	}
@@ -93,6 +76,8 @@ func (b Board) Solve() bool {
 			fmt.Println("CurrentRow or CurrentCol is nil")
 			return true
 		}
+		b.HorizontalDone = false
+		b.VerticalDone = false
 	}
 	fmt.Printf("Current working cell: %d,%d\n", *b.CurrentRow, *b.CurrentCol)
 
@@ -101,30 +86,31 @@ func (b Board) Solve() bool {
 			fmt.Println("Horizontal cell block is not empty")
 			if b.horizontalCellBlockIsValid(*b.CurrentRow, *b.CurrentCol) {
 				fmt.Println("Horizontal cell block already has a valid candidate inside.")
+				b.HorizontalDone = true
 			} else {
 				fmt.Println("Horizontal cell block doesn't have an invalid candidate inside")
 				return false
 			}
 		} else {
 			fmt.Println("Horizontal cell block is empty")
-			totalHorizontalLength, leftLength, rightLength := b.getHorizontalLengths(*b.CurrentRow, *b.CurrentCol)	
-			for _, candidate  := range b.CandidateMap[*totalHorizontalLength] { // Get a list of all possible candidates
+			totalHorizontalLength, leftLength, rightLength := b.getHorizontalLengths(*b.CurrentRow, *b.CurrentCol)
+			for _, candidate := range b.CandidateMap[*totalHorizontalLength] { // Get a list of all possible candidates
 				if slices.Contains(triedHorizontalCandidates, candidate) { // Skip tried candidates
 					continue
 				}
 				if b.validHorizontalPlacement(candidate, *b.CurrentRow, *b.CurrentCol, leftLength, rightLength) {
 					// b.placeHorizontal()
-					// b.Timeline = append(b.Timeline, cellblock.NewCellBlock(candidate, 'h', *b.CurrentRow, *b.CurrentCol, ??))
+					// b.Timeline.NewStep(candidate, 'h', *b.CurrentRow, *b.CurrentCol, ??))
 					// triedHorizontalCandidates = append(triedHorizontalCandidates, candidate)
 					// b.HorizontalDone = true
 					//if b.Solve() {
 					// 	return true
 					//}
 
-					// b.Backtrack() ?
+					// b.Backtrack() ? -- This is where we need to figure out
 
 					// b.HorizontalDone = false
-					// b.Timeline.RemoveLastMove() 
+					// b.Timeline.Backtrack()
 					// b.removeHorizontal()
 				}
 			}

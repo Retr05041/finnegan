@@ -3,7 +3,6 @@ package reader
 import (
 	"bufio"
 	"finnegan/internal/board"
-	"finnegan/internal/cellblock"
 	"os"
 	"strconv"
 )
@@ -77,9 +76,6 @@ func Read(gamePath string) (*board.Board, error) {
 			newBoard.CandidateMap[len(line)] = []string{line}
 		}
 	}
-
-	// Initialize Timeline
-	newBoard.Timeline = make([]cellblock.CellBlock, len(newBoard.CandidateReference))
 
 	return newBoard, nil
 }
