@@ -75,7 +75,7 @@ func (b Board) Solve() bool {
 	// if no words fit then backtrack
 	// vertical check
 	// identical to horizontal?
-	_ = b.placeHorizontal("70983", 0, 2, 0)
+	_ = b.placeVertical("716", 0, 2, 0)
 	b.Display()
 
 	b.nextValidCell()
@@ -85,15 +85,67 @@ func (b Board) Solve() bool {
 	}
 	fmt.Printf("Current working cell: %d,%d\n", *b.CurrentRow, *b.CurrentCol)
 
-	if !b.HorizontalCellBlockIsEmpty(*b.CurrentRow, *b.CurrentCol) && b.HorizontalCellBlockIsValid(*b.CurrentRow, *b.CurrentCol) {
-		fmt.Println("The horizontal cell block that contains the working cell already has a valid candidate inside.")
+	if !b.verticalCellBlockIsEmpty(*b.CurrentRow, *b.CurrentCol) && b.verticalCellBlockIsValid(*b.CurrentRow, *b.CurrentCol) {
+		fmt.Println("The vertical cell block that contains the working cell already has a valid candidate inside.")
 	}
-	fmt.Println("The horizontal cell block that contains the working cell needs to be filled")
+	fmt.Println("The vertical cell block that contains the working cell needs to be filled")
 
 	return false
 }
 
-func (b Board) HorizontalCellBlockIsEmpty(row int, col int) bool {
+func (b Board) verticalCellBlockIsEmpty(row int, col int) bool {
+	_, upLength, downLength:= b.getVerticalLengths(row, col)
+	if b.Grid[row][col] == '.' {
+		return true
+	}
+	// Up
+	for u := range upLength {
+		if b.Grid[row-u][col] == '.' {
+			return true
+		}
+	}
+	// Down
+	for d := range downLength {
+		if b.Grid[row+d][col] == '.' {
+			return true
+		}
+	}
+	fmt.Println("Vertical cell block is not empty")
+	return false
+}
+
+func (b Board) verticalCellBlockIsValid(row int, col int) bool {
+	upSideOfCandidate := ""
+	placementChar := ""
+	downSideOfCandidate := ""
+
+	_, upLength, downLength := b.getVerticalLengths(row, col)
+	placementChar = string(b.Grid[row][col])
+
+	// Up
+	if upLength > 0 {
+		for u := 1; u < upLength+1; u++ {
+			upSideOfCandidate = string(b.Grid[row-u][col]) + upSideOfCandidate 
+		}
+	}
+	// Down 
+	if downLength > 0 {
+		for d := 1; d < downLength+1; d++ {
+			downSideOfCandidate = downSideOfCandidate + string(b.Grid[row+d][col])
+		}
+	}
+
+	cellBlockCandidate := upSideOfCandidate + placementChar + downSideOfCandidate
+
+	if slices.Contains(b.CandidateReference, cellBlockCandidate) {
+		fmt.Println("Contains candidate: " + cellBlockCandidate)
+		return true
+	}
+	fmt.Println("Invalid candidate: " + cellBlockCandidate) 
+	return false
+}
+
+func (b Board) horizontalCellBlockIsEmpty(row int, col int) bool {
 	_, leftLength, rightLength := b.getHorizontalLengths(row, col)
 	if b.Grid[row][col] == '.' {
 		return true
@@ -114,7 +166,7 @@ func (b Board) HorizontalCellBlockIsEmpty(row int, col int) bool {
 	return false
 }
 
-func (b Board) HorizontalCellBlockIsValid(row int, col int) bool {
+func (b Board) horizontalCellBlockIsValid(row int, col int) bool {
 	leftSideOfCandidate := ""
 	placementChar := ""
 	rightSideOfCandidate := ""
