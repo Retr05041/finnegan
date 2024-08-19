@@ -22,6 +22,8 @@ func Read(gamePath string) (*board.Board, error) {
 	newBoard.CurrentRow = nil
 	newBoard.CurrentCol = nil
 	newBoard.CandidateMap = make(map[int][]string)
+	newBoard.HorizontalDone = false
+	newBoard.VerticalDone = false
 
 	// Get Grid size
 	gridSizeLine, err := fileReader.ReadString('\n')

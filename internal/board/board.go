@@ -16,6 +16,8 @@ type Board struct {
 	DarkCell           rune
 	CurrentRow         *int
 	CurrentCol         *int
+	HorizontalDone     bool
+	VerticalDone       bool
 	Timeline           []cellblock.CellBlock
 }
 
@@ -75,26 +77,53 @@ func (b Board) Solve() bool {
 	// if no words fit then backtrack
 	// vertical check
 	// identical to horizontal?
-	_ = b.placeVertical("716", 0, 2, 0)
-	b.Display()
+	if b.CurrentRow == nil || b.CurrentCol == nil { // First iteration cell set
+		b.nextValidCell()
+	}
 
-	b.nextValidCell()
-	if b.CurrentRow == nil || b.CurrentCol == nil {
-		fmt.Println("CurrentRow or CurrentCol is nil")
-		return true
+	// If both horizontal and vertical at this cell are done, move on
+	if b.HorizontalDone && b.VerticalDone {
+		b.nextValidCell()
+		if b.CurrentRow == nil || b.CurrentCol == nil {
+			fmt.Println("CurrentRow or CurrentCol is nil")
+			return true
+		}
 	}
 	fmt.Printf("Current working cell: %d,%d\n", *b.CurrentRow, *b.CurrentCol)
 
-	if !b.verticalCellBlockIsEmpty(*b.CurrentRow, *b.CurrentCol) && b.verticalCellBlockIsValid(*b.CurrentRow, *b.CurrentCol) {
-		fmt.Println("The vertical cell block that contains the working cell already has a valid candidate inside.")
+	if !b.HorizontalDone {
+		if !b.horizontalCellBlockIsEmpty(*b.CurrentRow, *b.CurrentCol) {
+			fmt.Println("Horizontal cell block is not empty")
+			if b.horizontalCellBlockIsValid(*b.CurrentRow, *b.CurrentCol) {
+				fmt.Println("Horizontal cell block already has a valid candidate inside.")
+			} else {
+				fmt.Println("Horizontal cell block doesn't have an invalid candidate inside")
+				return false
+			}
+		} else {
+			fmt.Println("Horizontal cell block is empty")
+		}
 	}
-	fmt.Println("The vertical cell block that contains the working cell needs to be filled")
+
+	if !b.VerticalDone {
+		if !b.verticalCellBlockIsEmpty(*b.CurrentRow, *b.CurrentCol) {
+			fmt.Println("Vertical cell block is not empty")
+			if b.verticalCellBlockIsValid(*b.CurrentRow, *b.CurrentCol) {
+				fmt.Println("Vertical cell block already has a valid candidate inside.")
+			} else {
+				fmt.Println("Vertical cell block doesn't have an invalid candidate inside")
+				return false
+			}
+		} else {
+			fmt.Println("Vertical cell block is empty")
+		}
+	}
 
 	return false
 }
 
 func (b Board) verticalCellBlockIsEmpty(row int, col int) bool {
-	_, upLength, downLength:= b.getVerticalLengths(row, col)
+	_, upLength, downLength := b.getVerticalLengths(row, col)
 	if b.Grid[row][col] == '.' {
 		return true
 	}
@@ -125,10 +154,10 @@ func (b Board) verticalCellBlockIsValid(row int, col int) bool {
 	// Up
 	if upLength > 0 {
 		for u := 1; u < upLength+1; u++ {
-			upSideOfCandidate = string(b.Grid[row-u][col]) + upSideOfCandidate 
+			upSideOfCandidate = string(b.Grid[row-u][col]) + upSideOfCandidate
 		}
 	}
-	// Down 
+	// Down
 	if downLength > 0 {
 		for d := 1; d < downLength+1; d++ {
 			downSideOfCandidate = downSideOfCandidate + string(b.Grid[row+d][col])
@@ -141,7 +170,7 @@ func (b Board) verticalCellBlockIsValid(row int, col int) bool {
 		fmt.Println("Contains candidate: " + cellBlockCandidate)
 		return true
 	}
-	fmt.Println("Invalid candidate: " + cellBlockCandidate) 
+	fmt.Println("Invalid candidate: " + cellBlockCandidate)
 	return false
 }
 
@@ -193,7 +222,7 @@ func (b Board) horizontalCellBlockIsValid(row int, col int) bool {
 		fmt.Println("Contains candidate: " + cellBlockCandidate)
 		return true
 	}
-	fmt.Println("Invalid candidate: " + cellBlockCandidate) 
+	fmt.Println("Invalid candidate: " + cellBlockCandidate)
 	return false
 }
 
