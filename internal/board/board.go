@@ -64,6 +64,7 @@ func (b Board) SolveGame1Test() bool {
 // Main runner function
 func (b Board) Solve() bool {
 	var triedHorizontalCandidates []string
+	var triedVerticalCandidates []string
 
 	if b.CurrentRow == nil || b.CurrentCol == nil { // First iteration cell set
 		b.nextValidCell()
@@ -100,7 +101,7 @@ func (b Board) Solve() bool {
 				}
 				if b.validHorizontalPlacement(candidate, *b.CurrentRow, *b.CurrentCol, leftLength, rightLength) {
 					// b.placeHorizontal()
-					// b.Timeline.NewStep(candidate, 'h', *b.CurrentRow, *b.CurrentCol, ??))
+					// b.Timeline.NewStep(candidate, 'h', *b.CurrentRow, *b.CurrentCol, leftLength)
 					// triedHorizontalCandidates = append(triedHorizontalCandidates, candidate)
 					// b.HorizontalDone = true
 					//if b.Solve() {
@@ -128,6 +129,27 @@ func (b Board) Solve() bool {
 			}
 		} else {
 			fmt.Println("Vertical cell block is empty")
+			totalVerticalLength, upLength, downLength := b.getVerticalLengths(*b.CurrentRow, *b.CurrentCol)
+			for _, candidate := range b.CandidateMap[*totalVerticalLength] { // Get a list of all possible candidates
+				if slices.Contains(triedVerticalCandidates, candidate) { // Skip tried candidates
+					continue
+				}
+				if b.validVerticalPlacement(candidate, *b.CurrentRow, *b.CurrentCol, upLength, downLength) {
+					// b.placeVertical()
+					// b.Timeline.NewStep(candidate, 'v', *b.CurrentRow, *b.CurrentCol, upLength)
+					// triedVerticalCandidates = append(triedVerticalCandidates, candidate)
+					// b.VerticalDone = true
+					//if b.Solve() {
+					// 	return true
+					//}
+
+					// b.Backtrack() ?
+
+					// b.VerticalDone = false
+					// b.Timeline.Backtrack()
+					// b.removeVertical()
+				}
+			}
 		}
 	}
 
