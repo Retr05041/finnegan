@@ -77,6 +77,11 @@ func (b Board) Solve() bool {
 	// if no words fit then backtrack
 	// vertical check
 	// identical to horizontal?
+
+
+	var triedHorizontalCandidates []string
+
+	
 	if b.CurrentRow == nil || b.CurrentCol == nil { // First iteration cell set
 		b.nextValidCell()
 	}
@@ -102,6 +107,27 @@ func (b Board) Solve() bool {
 			}
 		} else {
 			fmt.Println("Horizontal cell block is empty")
+			totalHorizontalLength, leftLength, rightLength := b.getHorizontalLengths(*b.CurrentRow, *b.CurrentCol)	
+			for _, candidate  := range b.CandidateMap[*totalHorizontalLength] { // Get a list of all possible candidates
+				if slices.Contains(triedHorizontalCandidates, candidate) { // Skip tried candidates
+					continue
+				}
+				if b.validHorizontalPlacement(candidate, *b.CurrentRow, *b.CurrentCol, leftLength, rightLength) {
+					// b.placeHorizontal()
+					// b.Timeline = append(b.Timeline, cellblock.NewCellBlock(candidate, 'h', *b.CurrentRow, *b.CurrentCol, ??))
+					// triedHorizontalCandidates = append(triedHorizontalCandidates, candidate)
+					// b.HorizontalDone = true
+					//if b.Solve() {
+					// 	return true
+					//}
+
+					// b.Backtrack() ?
+
+					// b.HorizontalDone = false
+					// b.Timeline.RemoveLastMove() 
+					// b.removeHorizontal()
+				}
+			}
 		}
 	}
 
