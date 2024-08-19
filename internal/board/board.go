@@ -62,7 +62,7 @@ func (b Board) SolveGame1Test() bool {
 }
 
 // Main runner function
-func (b Board) Solve() bool {
+func (b *Board) Solve() bool {
 	var triedHorizontalCandidates []string
 	var triedVerticalCandidates []string
 
@@ -83,6 +83,7 @@ func (b Board) Solve() bool {
 	fmt.Printf("Current working cell: %d,%d\n", *b.CurrentRow, *b.CurrentCol)
 
 	if !b.HorizontalDone {
+		fmt.Println("Horizontal is not done")
 		if !b.horizontalCellBlockIsEmpty(*b.CurrentRow, *b.CurrentCol) {
 			fmt.Println("Horizontal cell block is not empty")
 			if b.horizontalCellBlockIsValid(*b.CurrentRow, *b.CurrentCol) {
@@ -93,32 +94,35 @@ func (b Board) Solve() bool {
 				return false
 			}
 		} else {
-			fmt.Println("Horizontal cell block is empty")
+			fmt.Println("Horizontal cell block is empty - attempting to fill it")
 			totalHorizontalLength, leftLength, rightLength := b.getHorizontalLengths(*b.CurrentRow, *b.CurrentCol)
 			for _, candidate := range b.CandidateMap[*totalHorizontalLength] { // Get a list of all possible candidates
 				if slices.Contains(triedHorizontalCandidates, candidate) { // Skip tried candidates
 					continue
 				}
 				if b.validHorizontalPlacement(candidate, *b.CurrentRow, *b.CurrentCol, leftLength, rightLength) {
-					// b.placeHorizontal()
-					// b.Timeline.NewStep(candidate, 'h', *b.CurrentRow, *b.CurrentCol, leftLength)
-					// triedHorizontalCandidates = append(triedHorizontalCandidates, candidate)
-					// b.HorizontalDone = true
-					//if b.Solve() {
-					// 	return true
-					//}
+					horizontalBackup := b.placeHorizontal(candidate, *b.CurrentRow, *b.CurrentCol, leftLength)
+					b.Timeline.NewStep(candidate, 'h', *b.CurrentRow, *b.CurrentCol, leftLength)
+					triedHorizontalCandidates = append(triedHorizontalCandidates, candidate)
+					b.HorizontalDone = true
+					b.Display()
+					bufio.NewReader(os.Stdin).ReadBytes('\n')
+					if b.Solve() {
+					 	return true
+					}
 
 					// b.Backtrack() ? -- This is where we need to figure out
 
-					// b.HorizontalDone = false
-					// b.Timeline.Backtrack()
-					// b.removeHorizontal()
+					 b.HorizontalDone = false
+					 b.Timeline.Backtrack()
+					 b.removeHorizontal(candidate, *b.CurrentRow, *b.CurrentCol, horizontalBackup, leftLength)
 				}
 			}
 		}
 	}
 
 	if !b.VerticalDone {
+		fmt.Println("Vertical is not done")
 		if !b.verticalCellBlockIsEmpty(*b.CurrentRow, *b.CurrentCol) {
 			fmt.Println("Vertical cell block is not empty")
 			if b.verticalCellBlockIsValid(*b.CurrentRow, *b.CurrentCol) {
@@ -128,31 +132,34 @@ func (b Board) Solve() bool {
 				return false
 			}
 		} else {
-			fmt.Println("Vertical cell block is empty")
+			fmt.Println("Vertical cell block is empty - attempting to fill it")
 			totalVerticalLength, upLength, downLength := b.getVerticalLengths(*b.CurrentRow, *b.CurrentCol)
 			for _, candidate := range b.CandidateMap[*totalVerticalLength] { // Get a list of all possible candidates
 				if slices.Contains(triedVerticalCandidates, candidate) { // Skip tried candidates
 					continue
 				}
 				if b.validVerticalPlacement(candidate, *b.CurrentRow, *b.CurrentCol, upLength, downLength) {
-					// b.placeVertical()
-					// b.Timeline.NewStep(candidate, 'v', *b.CurrentRow, *b.CurrentCol, upLength)
-					// triedVerticalCandidates = append(triedVerticalCandidates, candidate)
-					// b.VerticalDone = true
-					//if b.Solve() {
-					// 	return true
-					//}
+					verticalBackup := b.placeVertical(candidate, *b.CurrentRow, *b.CurrentCol, upLength)
+					b.Timeline.NewStep(candidate, 'v', *b.CurrentRow, *b.CurrentCol, upLength)
+					triedVerticalCandidates = append(triedVerticalCandidates, candidate)
+					b.VerticalDone = true
+					b.Display()
+					bufio.NewReader(os.Stdin).ReadBytes('\n')
+					if b.Solve() {
+					 	return true
+					}
 
 					// b.Backtrack() ?
 
-					// b.VerticalDone = false
-					// b.Timeline.Backtrack()
-					// b.removeVertical()
+					b.VerticalDone = false
+					b.Timeline.Backtrack()
+					b.removeVertical(candidate, *b.CurrentRow, *b.CurrentCol, verticalBackup, upLength)
 				}
 			}
 		}
 	}
 
+	fmt.Println("End of program")
 	return false
 }
 
