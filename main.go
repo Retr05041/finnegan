@@ -2,6 +2,7 @@ package main
 
 import (
 	"finnegan/internal/reader"
+	"finnegan/internal/solver"
 	"fmt"
 	"log"
 )
@@ -12,8 +13,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if board.Solve() {
-		board.Display()
+	if solver.Solve(board) {
+		fmt.Println("SOLVED")
+		solver.CurrentBoard.Display()
 	} else {
 		fmt.Println("Could not solve puzzle.")
 	}
