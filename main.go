@@ -8,14 +8,14 @@ import (
 )
 
 func main() {
-	board, err := reader.Read("./games/game1.txt")
+	timeline, err := reader.Read("./games/game1.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if solver.Solve(board) {
+	if solver.Solve(timeline) {
 		fmt.Println("SOLVED")
-		solver.CurrentBoard.Display()
+		timeline.CurrentBoard.Display()
 	} else {
 		fmt.Println("Could not solve puzzle.")
 	}

@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func Read(gamePath string) (*board.Board, error) {
+func Read(gamePath string) (*board.Timeline, error) {
 	// Open File
 	file, err := os.Open(gamePath)
 	if err != nil {
@@ -17,29 +17,31 @@ func Read(gamePath string) (*board.Board, error) {
 
 	fileReader := bufio.NewReader(file)
 	newBoard := new(board.Board)
+	timeline := new(board.Timeline)
+
 	newBoard.DarkCell = '■'
-	newBoard.CurrentRow = nil
-	newBoard.CurrentCol = nil
-	newBoard.CandidateMap = make(map[int][]string)
+	newBoard.WorkingRow = nil
+	newBoard.WorkingCol = nil
+	timeline.CandidateMap = make(map[int][]string)
 
 	// Get Grid size
 	gridSizeLine, err := fileReader.ReadString('\n')
 	if err != nil {
 		return nil, err
 	}
-	newBoard.Size, err = strconv.Atoi(gridSizeLine[:len(gridSizeLine)-1])
+	boardSize, err := strconv.Atoi(gridSizeLine[:len(gridSizeLine)-1])
 	if err != nil {
 		return nil, err
 	}
 
 	// Initilize Grid
-	newBoard.Grid = make([][]rune, newBoard.Size)
+	newBoard.Grid = make([][]rune, boardSize)
 	for i := range newBoard.Grid {
-		newBoard.Grid[i] = make([]rune, newBoard.Size)
+		newBoard.Grid[i] = make([]rune, boardSize)
 	}
 
 	// Gather grid from file
-	for row := range newBoard.Size {
+	for row := range boardSize {
 		gridLine, err := fileReader.ReadString('\n')
 		if err != nil {
 			return nil, err
@@ -66,14 +68,17 @@ func Read(gamePath string) (*board.Board, error) {
 			break
 		}
 		line = line[:len(line)-1]
-		newBoard.CandidateReference = append(newBoard.CandidateReference, line)
+		timeline.CandidateReference = append(timeline.CandidateReference, line)
 
-		if existingCandidates, ok := newBoard.CandidateMap[len(line)]; ok {
-			newBoard.CandidateMap[len(line)] = append(existingCandidates, line)
+		if existingCandidates, ok := timeline.CandidateMap[len(line)]; ok {
+			timeline.CandidateMap[len(line)] = append(existingCandidates, line)
 		} else {
-			newBoard.CandidateMap[len(line)] = []string{line}
+			timeline.CandidateMap[len(line)] = []string{line}
 		}
 	}
 
-	return newBoard, nil
+	timeline.Boards = append(timeline.Boards, *newBoard)
+	timeline.CurrentBoard = *newBoard
+	timeline.Length = len(timeline.Boards)
+	return timeline, nil
 }

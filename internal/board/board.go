@@ -10,25 +10,27 @@ var (
 )
 
 type Timeline struct {
-	Length       int
-	CurrentBoard Board
-	Boards       []Board
-}
-
-func NewTimeline(baseBoard *Board) *Timeline {
-	startingBoard := []Board{*baseBoard}
-	return &Timeline{Length: 1, CurrentBoard: *baseBoard, Boards: startingBoard}
+	Length             int
+	CurrentBoard       Board
+	CandidateMap       map[int][]string
+	CandidateReference []string
+	Boards             []Board
 }
 
 type Board struct {
-	Size                  int
-	Grid                  [][]rune
-	CandidateMap          map[int][]string
-	CandidateReference    []string
-	DarkCell              rune
-	CurrentRow            *int
-	CurrentCol            *int
-	LatestCandidatePlaced string
+	Grid     [][]rune
+	DarkCell rune
+
+	WorkingRow                 *int
+	WorkingCol                 *int
+	WorkingDirection           rune
+	IndexOfCandidateWhenPlaced int
+	CellblockTotalLength       int
+	CellblockBackLength        int
+	CellblockForwardLength     int
+
+	PossibleCandidates []string
+	WorkingCandidate   string
 }
 
 // Print the board nicely
@@ -42,9 +44,9 @@ func (b Board) Display() {
 }
 
 func (b Board) VerticalCellBlockIsEmpty() bool {
-	row := *b.CurrentRow
-	col := *b.CurrentCol
-	_, upLength, downLength := b.GetVerticalLengths(row, col)
+	row := *b.WorkingRow
+	col := *b.WorkingCol
+	_, upLength, downLength := b.GetVerticalLengths(*b.WorkingRow, *b.WorkingCol)
 	if b.Grid[row][col] == '.' {
 		return true
 	}
@@ -64,9 +66,9 @@ func (b Board) VerticalCellBlockIsEmpty() bool {
 	return false
 }
 
-func (b Board) VerticalCellBlockIsValid() bool {
-	row := *b.CurrentRow
-	col := *b.CurrentCol
+func (b Board) VerticalCellBlockIsValid(candidateRef []string) bool {
+	row := *b.WorkingRow
+	col := *b.WorkingCol
 	upSideOfCandidate := ""
 	placementChar := ""
 	downSideOfCandidate := ""
@@ -89,7 +91,7 @@ func (b Board) VerticalCellBlockIsValid() bool {
 
 	cellBlockCandidate := upSideOfCandidate + placementChar + downSideOfCandidate
 
-	if slices.Contains(b.CandidateReference, cellBlockCandidate) {
+	if slices.Contains(candidateRef, cellBlockCandidate) {
 		fmt.Println("Contains candidate: " + cellBlockCandidate)
 		return true
 	}
@@ -118,7 +120,9 @@ func (b Board) HorizontalCellBlockIsEmpty(row int, col int) bool {
 	return false
 }
 
-func (b Board) HorizontalCellBlockIsValid(row int, col int) bool {
+func (b Board) HorizontalCellBlockIsValid(candidateRef []string) bool {
+	row := *b.WorkingRow
+	col := *b.WorkingCol
 	leftSideOfCandidate := ""
 	placementChar := ""
 	rightSideOfCandidate := ""
@@ -141,7 +145,7 @@ func (b Board) HorizontalCellBlockIsValid(row int, col int) bool {
 
 	cellBlockCandidate := leftSideOfCandidate + placementChar + rightSideOfCandidate
 
-	if slices.Contains(b.CandidateReference, cellBlockCandidate) {
+	if slices.Contains(candidateRef, cellBlockCandidate) {
 		fmt.Println("Contains candidate: " + cellBlockCandidate)
 		return true
 	}
@@ -350,30 +354,30 @@ func (b Board) NextEmptyCell() (*int, *int) {
 }
 
 func (b *Board) NextValidCell() {
-	if b.CurrentRow == nil || b.CurrentCol == nil { // Should only happen on first iteration
+	if b.WorkingRow == nil || b.WorkingCol == nil { // Should only happen on first iteration
 		for row := range len(b.Grid) {
 			for col := range len(b.Grid[row]) {
 				if b.Grid[row][col] != b.DarkCell {
-					b.CurrentRow = &row
-					b.CurrentCol = &col
+					b.WorkingRow = &row
+					b.WorkingCol = &col
 					return
 				}
 			}
 		}
 	} else {
-		continueFromRow := *b.CurrentRow
-		continueFromCol := *b.CurrentCol
+		continueFromRow := *b.WorkingRow
+		continueFromCol := *b.WorkingCol
 		for row := continueFromRow; row < len(b.Grid); row++ {
 			for col := continueFromCol; col < len(b.Grid[row]); col++ {
 				if b.Grid[row][col] != b.DarkCell {
-					b.CurrentRow = &row
-					b.CurrentCol = &col
+					b.WorkingRow = &row
+					b.WorkingCol = &col
 					return
 				}
 			}
 			continueFromCol = 0
 		}
 	}
-	b.CurrentRow = nil
-	b.CurrentCol = nil
+	b.WorkingRow = nil
+	b.WorkingCol = nil
 }

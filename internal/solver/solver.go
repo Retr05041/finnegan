@@ -1,13 +1,16 @@
 package solver
 
-import "finnegan/internal/board"
+import (
+	"finnegan/internal/board"
+	"fmt"
+)
 
 var (
 	Timeline *board.Timeline
 )
 
-func Solve(b *board.Board) bool {
-	Timeline = board.NewTimeline(b)
+func Solve(t *board.Timeline) bool {
+	Timeline = t
 	if Solver(true) {
 		return true
 	}
@@ -17,9 +20,7 @@ func Solve(b *board.Board) bool {
 
 // Main runner function
 func Solver(AdvanceToNextValidCell bool) bool {
-	if AdvanceToNextValidCell {
-		Timeline.CurrentBoard.NextValidCell()
-	}
+	fmt.Println("Ready to start solving.")
 	return false
 }
 
@@ -45,5 +46,6 @@ func Solver(AdvanceToNextValidCell bool) bool {
 // The timeline should hold these values:
 // CandidateMap :: Lengths of candidates -> slices of candidates :: This will be updated as candidates get used by a board
 // CandidateReference :: perminant slice of candidates
+// Boards :: slice of boards, the last board in the slice being the most recent
 
 // In total we should have double the amount of boards in our timeline compared to white cells in the board
