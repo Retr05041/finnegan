@@ -17,6 +17,13 @@ type Timeline struct {
 	Boards             []Board
 }
 
+func (t *Timeline) Advance() {
+	newBoard := t.CurrentBoard
+	t.Boards = append(t.Boards, newBoard)
+	t.CurrentBoard = newBoard
+	t.CurrentBoard.NextValidCell()
+}
+
 type Board struct {
 	Grid     [][]rune
 	DarkCell rune
@@ -43,9 +50,7 @@ func (b Board) Display() {
 	}
 }
 
-func (b Board) VerticalCellBlockIsEmpty() bool {
-	row := *b.WorkingRow
-	col := *b.WorkingCol
+func (b Board) VerticalCellBlockIsEmpty(row, col int) bool {
 	_, upLength, downLength := b.GetVerticalLengths(*b.WorkingRow, *b.WorkingCol)
 	if b.Grid[row][col] == '.' {
 		return true
@@ -99,7 +104,7 @@ func (b Board) VerticalCellBlockIsValid(candidateRef []string) bool {
 	return false
 }
 
-func (b Board) HorizontalCellBlockIsEmpty(row int, col int) bool {
+func (b Board) HorizontalCellBlockIsEmpty(row, col int) bool {
 	_, leftLength, rightLength := b.GetHorizontalLengths(row, col)
 	if b.Grid[row][col] == '.' {
 		return true
@@ -341,43 +346,14 @@ func (b Board) RemoveVertical(candidate string, row int, col int, backupCellSequ
 	}
 }
 
-// Checks for next empty cell in the b.Grid
-func (b Board) NextEmptyCell() (*int, *int) {
+func (b *Board) NextValidCell() {
 	for row := range len(b.Grid) {
 		for col := range len(b.Grid[row]) {
-			if b.Grid[row][col] == '.' {
-				return &row, &col
+			if b.Grid[row][col] != b.DarkCell && !b.HorizontalCellBlockIsEmpty(row, col) || !b.VerticalCellBlockIsEmpty(row, col) {
+				b.WorkingRow = &row
+				b.WorkingCol = &col
+				return
 			}
 		}
 	}
-	return nil, nil
-}
-
-func (b *Board) NextValidCell() {
-	if b.WorkingRow == nil || b.WorkingCol == nil { // Should only happen on first iteration
-		for row := range len(b.Grid) {
-			for col := range len(b.Grid[row]) {
-				if b.Grid[row][col] != b.DarkCell {
-					b.WorkingRow = &row
-					b.WorkingCol = &col
-					return
-				}
-			}
-		}
-	} else {
-		continueFromRow := *b.WorkingRow
-		continueFromCol := *b.WorkingCol
-		for row := continueFromRow; row < len(b.Grid); row++ {
-			for col := continueFromCol; col < len(b.Grid[row]); col++ {
-				if b.Grid[row][col] != b.DarkCell {
-					b.WorkingRow = &row
-					b.WorkingCol = &col
-					return
-				}
-			}
-			continueFromCol = 0
-		}
-	}
-	b.WorkingRow = nil
-	b.WorkingCol = nil
 }

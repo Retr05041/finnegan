@@ -11,7 +11,7 @@ var (
 
 func Solve(t *board.Timeline) bool {
 	Timeline = t
-	if Solver(true) {
+	if Solver() {
 		return true
 	}
 	return false
@@ -19,7 +19,7 @@ func Solve(t *board.Timeline) bool {
 
 
 // Main runner function
-func Solver(AdvanceToNextValidCell bool) bool {
+func Solver() bool {
 	fmt.Println("Ready to start solving.")
 	return false
 }
@@ -49,3 +49,5 @@ func Solver(AdvanceToNextValidCell bool) bool {
 // Boards :: slice of boards, the last board in the slice being the most recent
 
 // In total we should have double the amount of boards in our timeline compared to white cells in the board
+// Advancing brings us to the "next valid cell" which will be the first cell with a horizontal or vertical cellblock not filled / valid
+// Backtracking brings us back to the board prior - the board holds possible candidates for that cellblock - inability to fit a valid candidate will result in a backtrack to happen again
