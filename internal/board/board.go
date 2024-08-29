@@ -1,10 +1,7 @@
 package board
 
 import (
-	"bufio"
-	"finnegan/internal/cellblock"
 	"fmt"
-	"os"
 	"slices"
 )
 
@@ -16,9 +13,8 @@ type Board struct {
 	DarkCell           rune
 	CurrentRow         *int
 	CurrentCol         *int
-	HorizontalDone     bool
-	VerticalDone       bool
-	Timeline           cellblock.TimeLine
+
+	HorizontalFlag bool
 }
 
 var (
@@ -35,135 +31,10 @@ func (b Board) Display() {
 	}
 }
 
-func (b Board) SolveGame1Test() bool {
-	_ = b.placeHorizontal("70983", 0, 2, 0)
-	b.Display()
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
-	_ = b.placeVertical("716", 0, 2, 0)
-	b.Display()
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
-	_ = b.placeVertical("013091", 0, 3, 0)
-	b.Display()
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
-	_ = b.placeHorizontal("110230", 1, 4, 2)
-	b.Display()
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
-	b.Display()
-	_, leftLength, rightLength := b.getHorizontalLengths(2, 4)
-	fmt.Printf("leftLength: %d - rightLength: %d", leftLength, rightLength)
-	if b.validHorizontalPlacement("637047", 2, 4, leftLength, rightLength) {
-		_ = b.placeHorizontal("637047", 2, 4, leftLength)
-		b.Display()
-	} else {
-		fmt.Println("Can't fit..")
-	}
+// --- CELL BLOCK VALIDATORS ---
 
-	return false
-}
-
-// Main runner function
-func (b *Board) Solve() bool {
-	var triedHorizontalCandidates []string
-	var triedVerticalCandidates []string
-
-	if b.CurrentRow == nil || b.CurrentCol == nil { // First iteration cell set
-		b.nextValidCell()
-	}
-
-	// If both horizontal and vertical at this cell are done, move on
-	if b.HorizontalDone && b.VerticalDone {
-		b.nextValidCell()
-		if b.CurrentRow == nil || b.CurrentCol == nil {
-			fmt.Println("CurrentRow or CurrentCol is nil")
-			return true
-		}
-		b.HorizontalDone = false
-		b.VerticalDone = false
-	}
-	fmt.Printf("Current working cell: %d,%d\n", *b.CurrentRow, *b.CurrentCol)
-
-	if !b.HorizontalDone {
-		fmt.Println("Horizontal is not done")
-		if !b.horizontalCellBlockIsEmpty(*b.CurrentRow, *b.CurrentCol) {
-			fmt.Println("Horizontal cell block is not empty")
-			if b.horizontalCellBlockIsValid(*b.CurrentRow, *b.CurrentCol) {
-				fmt.Println("Horizontal cell block already has a valid candidate inside.")
-				b.HorizontalDone = true
-			} else {
-				fmt.Println("Horizontal cell block doesn't have an invalid candidate inside")
-				return false
-			}
-		} else {
-			fmt.Println("Horizontal cell block is empty - attempting to fill it")
-			totalHorizontalLength, leftLength, rightLength := b.getHorizontalLengths(*b.CurrentRow, *b.CurrentCol)
-			for _, candidate := range b.CandidateMap[*totalHorizontalLength] { // Get a list of all possible candidates
-				if slices.Contains(triedHorizontalCandidates, candidate) { // Skip tried candidates
-					continue
-				}
-				if b.validHorizontalPlacement(candidate, *b.CurrentRow, *b.CurrentCol, leftLength, rightLength) {
-					horizontalBackup := b.placeHorizontal(candidate, *b.CurrentRow, *b.CurrentCol, leftLength)
-					b.Timeline.NewStep(candidate, 'h', *b.CurrentRow, *b.CurrentCol, leftLength)
-					triedHorizontalCandidates = append(triedHorizontalCandidates, candidate)
-					b.HorizontalDone = true
-					b.Display()
-					bufio.NewReader(os.Stdin).ReadBytes('\n')
-					if b.Solve() {
-					 	return true
-					}
-
-					// b.Backtrack() ? -- This is where we need to figure out
-
-					 b.HorizontalDone = false
-					 b.Timeline.Backtrack()
-					 b.removeHorizontal(candidate, *b.CurrentRow, *b.CurrentCol, horizontalBackup, leftLength)
-				}
-			}
-		}
-	}
-
-	if !b.VerticalDone {
-		fmt.Println("Vertical is not done")
-		if !b.verticalCellBlockIsEmpty(*b.CurrentRow, *b.CurrentCol) {
-			fmt.Println("Vertical cell block is not empty")
-			if b.verticalCellBlockIsValid(*b.CurrentRow, *b.CurrentCol) {
-				fmt.Println("Vertical cell block already has a valid candidate inside.")
-			} else {
-				fmt.Println("Vertical cell block doesn't have an invalid candidate inside")
-				return false
-			}
-		} else {
-			fmt.Println("Vertical cell block is empty - attempting to fill it")
-			totalVerticalLength, upLength, downLength := b.getVerticalLengths(*b.CurrentRow, *b.CurrentCol)
-			for _, candidate := range b.CandidateMap[*totalVerticalLength] { // Get a list of all possible candidates
-				if slices.Contains(triedVerticalCandidates, candidate) { // Skip tried candidates
-					continue
-				}
-				if b.validVerticalPlacement(candidate, *b.CurrentRow, *b.CurrentCol, upLength, downLength) {
-					verticalBackup := b.placeVertical(candidate, *b.CurrentRow, *b.CurrentCol, upLength)
-					b.Timeline.NewStep(candidate, 'v', *b.CurrentRow, *b.CurrentCol, upLength)
-					triedVerticalCandidates = append(triedVerticalCandidates, candidate)
-					b.VerticalDone = true
-					b.Display()
-					bufio.NewReader(os.Stdin).ReadBytes('\n')
-					if b.Solve() {
-					 	return true
-					}
-
-					// b.Backtrack() ?
-
-					b.VerticalDone = false
-					b.Timeline.Backtrack()
-					b.removeVertical(candidate, *b.CurrentRow, *b.CurrentCol, verticalBackup, upLength)
-				}
-			}
-		}
-	}
-
-	fmt.Println("End of program")
-	return false
-}
-
-func (b Board) verticalCellBlockIsEmpty(row int, col int) bool {
+// Checks if the vertical cell block has an empty cell (i.e. Not done yet)
+func (b Board) isVerticalCellBlockIsEmpty(row int, col int) bool {
 	_, upLength, downLength := b.getVerticalLengths(row, col)
 	if b.Grid[row][col] == '.' {
 		return true
@@ -184,7 +55,8 @@ func (b Board) verticalCellBlockIsEmpty(row int, col int) bool {
 	return false
 }
 
-func (b Board) verticalCellBlockIsValid(row int, col int) bool {
+// Checks if the vertical candidate placed in the cell block is a valid candidate
+func (b Board) isVerticalCellBlockIsValid(row int, col int) bool {
 	upSideOfCandidate := ""
 	placementChar := ""
 	downSideOfCandidate := ""
@@ -215,7 +87,8 @@ func (b Board) verticalCellBlockIsValid(row int, col int) bool {
 	return false
 }
 
-func (b Board) horizontalCellBlockIsEmpty(row int, col int) bool {
+// Checks if the horizontal cell block has an empty cell (i.e. Not done yet)
+func (b Board) isHorizontalCellBlockIsEmpty(row int, col int) bool {
 	_, leftLength, rightLength := b.getHorizontalLengths(row, col)
 	if b.Grid[row][col] == '.' {
 		return true
@@ -236,7 +109,8 @@ func (b Board) horizontalCellBlockIsEmpty(row int, col int) bool {
 	return false
 }
 
-func (b Board) horizontalCellBlockIsValid(row int, col int) bool {
+// Checks if the horizontal candidate placed in the cell block is a valid candidate
+func (b Board) isHorizontalCellBlockIsValid(row int, col int) bool {
 	leftSideOfCandidate := ""
 	placementChar := ""
 	rightSideOfCandidate := ""
@@ -260,15 +134,13 @@ func (b Board) horizontalCellBlockIsValid(row int, col int) bool {
 	cellBlockCandidate := leftSideOfCandidate + placementChar + rightSideOfCandidate
 
 	if slices.Contains(b.CandidateReference, cellBlockCandidate) {
-		fmt.Println("Contains candidate: " + cellBlockCandidate)
 		return true
 	}
-	fmt.Println("Invalid candidate: " + cellBlockCandidate)
 	return false
 }
 
 // Checks if a candidate can be placed horizontally
-func (b Board) validHorizontalPlacement(candidate string, row int, col int, leftLength int, rightLength int) bool {
+func (b Board) isValidHorizontalPlacement(candidate string, row int, col int, leftLength int, rightLength int) bool {
 	if col < 0 || row < 0 || row >= len(b.Grid) || col+rightLength > len(b.Grid[row]) || col-leftLength < 0 {
 		fmt.Printf("The candidate goes off the board - start col: %d, candidate length: %d, row length: %d\n", col, len(candidate), len(b.Grid[row]))
 		return false
@@ -309,7 +181,7 @@ func (b Board) validHorizontalPlacement(candidate string, row int, col int, left
 }
 
 // Checks if a candidate can be placed vertically
-func (b Board) validVerticalPlacement(candidate string, row int, col int, upLength int, downLength int) bool {
+func (b Board) isValidVerticalPlacement(candidate string, row int, col int, upLength int, downLength int) bool {
 	if col < 0 || row < 0 || col >= len(b.Grid) || row+downLength > len(b.Grid)-1 || row-upLength < 0 {
 		fmt.Printf("The candidate goes off the board - start row: %d, candidate length: %d, col length: %d\n", row, len(candidate), col)
 		return false
@@ -351,7 +223,7 @@ func (b Board) validVerticalPlacement(candidate string, row int, col int, upLeng
 	return true
 }
 
-// -- HELPER FUNCTIONS ---
+// --- LIST CONTROL ---
 func removeCandidateFromList(list []string, candidate string) []string {
 	newList := []string{}
 	for _, item := range list {
@@ -370,6 +242,8 @@ func addCandidateToList(list []string, candidate string) []string {
 	}
 	return append(list, candidate)
 }
+
+// --- LENGTH FINDERS ---
 
 func (b Board) getHorizontalLengths(row int, col int) (*int, int, int) {
 	totalLength := 1 // Account for current cell
@@ -417,7 +291,9 @@ func (b Board) getVerticalLengths(row int, col int) (*int, int, int) {
 	return &totalLength, upLength, downLength
 }
 
-func (b Board) placeHorizontal(candidate string, row int, col int, startIndexOfCandidate int) []rune {
+// --- PLACEMENTS ---
+
+func (b Board) placeHorizontalOnBoard(candidate string, row int, col int, startIndexOfCandidate int) []rune {
 	var backupCellSequence []rune
 	for i := range len(candidate) {
 		gridColOffset := col + (i - startIndexOfCandidate)
@@ -429,7 +305,7 @@ func (b Board) placeHorizontal(candidate string, row int, col int, startIndexOfC
 	return backupCellSequence
 }
 
-func (b Board) placeVertical(candidate string, row int, col int, startIndexOfCandidate int) []rune {
+func (b Board) placeVerticalOnBoard(candidate string, row int, col int, startIndexOfCandidate int) []rune {
 	var backupCellSequence []rune
 	for i := range len(candidate) {
 		gridRowOffset := row + (i - startIndexOfCandidate)
@@ -441,57 +317,44 @@ func (b Board) placeVertical(candidate string, row int, col int, startIndexOfCan
 	return backupCellSequence
 }
 
-func (b Board) removeHorizontal(candidate string, row int, col int, backupCellSequence []rune, startIndexOfCandidate int) {
+func (b Board) removeHorizontalFromBoard(candidate string, row int, col int, backupCellSequence []rune, startIndexOfCandidate int) {
 	for i := range len(candidate) {
 		gridColOffset := col + (i - startIndexOfCandidate)
 		b.Grid[row][gridColOffset] = backupCellSequence[i]
 	}
 }
 
-func (b Board) removeVertical(candidate string, row int, col int, backupCellSequence []rune, startIndexOfCandidate int) {
+func (b Board) removeVerticalFromBoard(candidate string, row int, col int, backupCellSequence []rune, startIndexOfCandidate int) {
 	for i := range len(candidate) {
 		gridRowOffset := row + (i - startIndexOfCandidate)
 		b.Grid[gridRowOffset][col] = backupCellSequence[i]
 	}
 }
 
-// Checks for next empty cell in the b.Grid
-func (b Board) nextEmptyCell() (*int, *int) {
+// --- CELL FINDER ---
+
+// As we need to redo some cells, this allows us to go to the earliest fillable cell
+func (b *Board) nextFillableCell() {
 	for row := range len(b.Grid) {
 		for col := range len(b.Grid[row]) {
-			if b.Grid[row][col] == '.' {
-				return &row, &col
-			}
-		}
-	}
-	return nil, nil
-}
-
-func (b *Board) nextValidCell() {
-	if b.CurrentRow == nil || b.CurrentCol == nil { // Should only happen on first iteration
-		for row := range len(b.Grid) {
-			for col := range len(b.Grid[row]) {
-				if b.Grid[row][col] != b.DarkCell {
-					b.CurrentRow = &row
-					b.CurrentCol = &col
-					return
+			if b.Grid[row][col] != b.DarkCell {
+				if b.isHorizontalCellBlockIsEmpty(row, col) {
+					full, _, _ := b.getHorizontalLengths(row, col)
+					if _, ok := b.CandidateMap[*full]; ok {
+						b.CurrentRow = &row
+						b.CurrentCol = &col
+						return
+					}
+				}
+				if b.isVerticalCellBlockIsEmpty(row, col) {
+					full, _, _ := b.getVerticalLengths(row, col)
+					if _, ok := b.CandidateMap[*full]; ok {
+						b.CurrentRow = &row
+						b.CurrentCol = &col
+						return
+					}
 				}
 			}
 		}
-	} else {
-		continueFromRow := *b.CurrentRow
-		continueFromCol := *b.CurrentCol
-		for row := continueFromRow; row < len(b.Grid); row++ {
-			for col := continueFromCol; col < len(b.Grid[row]); col++ {
-				if b.Grid[row][col] != b.DarkCell {
-					b.CurrentRow = &row
-					b.CurrentCol = &col
-					return
-				}
-			}
-			continueFromCol = 0
-		}
 	}
-	b.CurrentRow = nil
-	b.CurrentCol = nil
 }
